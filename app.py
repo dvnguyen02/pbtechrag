@@ -44,6 +44,19 @@ with trace("rag_pipline", projectname="simplerag") as tracer:
     # example_messages= example_messages.to_messages()
 
 
+
+
+
+from typing import Literal
+from typing_extensions import Annotated
+
+
+class Search(TypedDict): 
+    query: Annotated[str, ... , "Search query to run"]
+    section: Annotated[
+        Literal["entry-level laptops", "mid-range laptops", "high-end/premium laptops"], ... , "Section of the products to search"
+    ]
+    
 # Using langGraph
 from langchain_core.documents import Document
 from typing_extensions import List, TypedDict
@@ -108,15 +121,10 @@ _ = vector_store.add_documents(documents=data)
 
 # schema
 
-from typing import Literal
-from typing_extensions import Annotated
 
 
-class Search(TypedDict): 
-    query: Annotated[str, ... , "Search query to run"]
-    section: Annotated[
-        Literal["entry-level laptops", "mid-range laptops", "high-end/premium laptops"], ... , "Section of the products to search"
-    ]
+
+
 
 # The Search class provides a type-safe way to create search parameters 
 # that match these sections, enabling filtered searches like:
@@ -156,3 +164,12 @@ graph_builder.add_node("generation", generation)
 graph_builder.add_edge(START, "analyze_query")
 graph_builder.add_edge("analyze_query", "retrieve")
 graph_builder.add_edge("retrieve", "generation")
+
+
+# test run
+result = graph_builder.invoke(
+    {"question": input("What product do you want to know about?")}
+)
+print("Question:", result["question"])
+print("Analyzed Query:", result["query"])
+print("Answer:", result["answer"].content)
