@@ -9,7 +9,9 @@ from langchain_core.vectorstores import InMemoryVectorStore
 from langchain_community.document_loaders import CSVLoader
 from langchain import hub
 from langchain_core.documents import Document
-from langgraph.graph import START, StateGraph
+from langgraph.graph import START, END, StateGraph, MessagesState
+from langchain_core.tools import tool
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, FunctionMessage
 # environment setup
 load_dotenv()
 os.environ["LANGSMITH_TRACING"] = "true"
@@ -34,13 +36,6 @@ class Search(TypedDict):
     ]
 
 from langchain_core.documents import Document
-
-class State(TypedDict):
-    question: str
-    context: List[Document]
-    query: Search
-    answer: str
-
 # Load and process data
 from langsmith import trace
 with trace("rag_pipline", projectname="simplerag") as tracer:
@@ -68,10 +63,18 @@ with trace("rag_pipline", projectname="simplerag") as tracer:
 
 # nodes for pipeline
 
-def analyze_query(state: State): 
-    """Analyze the question and determine the section to search."""
+def analyze_query(state: MessagesState):
+    # Extract the question from the last human message
+    messages = state["messages"]
+    last_human_message = next((m for m in reversed(messages) if m.type == "human"), None)
+    
+    if not last_human_message:
+        return {"messages": [AIMessage(content="I couldn't find a question to answer.")]}
+    
+    question = last_human_message.content
+    
     response = llm.invoke(
-        f"Analyze the question: {state['question']}. "
+        f"Analyze the question: {question}. "
         "Determine if it is related to entry-level, mid-range, or high-end laptops. "
         "Return your answer as a JSON object with 'query' (the search query) and 'section' "
         "(one of: 'entry-level laptops', 'mid-range laptops', 'high-end/premium laptops', or 'all') fields."
@@ -84,33 +87,71 @@ def analyze_query(state: State):
             query_data["section"] = "all"
     except: 
         query_data = {
-            "query": state["question"],
+            "query": question,
             "section": "all"
         }
-    return {"query": query_data}
+    
+    # Add a system message containing the query information
+    return {"messages": [SystemMessage(content=json.dumps(query_data))]}
 
 # retrieve using semantic search 
-def retrieve(state: State): 
-    """Retrieve products from the vector store based on the question."""
-    query = state["query"]
-    if query["section"] != "all": 
-        filter_dict = {"metadata": {"section": query["section"]}}
-        retrieved_products = vector_store.similarity_search_with_metadata(
-            query["query"], 
-            k=3, 
-            filter=filter_dict
-        )
-    else: 
-        retrieved_products = vector_store.similarity_search(query["query"], k=3)
-    return {"context": retrieved_products}
-            
-def generation(state: State): 
-    product_contents = "\n\n".join([doc.page_content for doc in state["context"]])
-    messages = prompt.invoke(
-        {"context": product_contents, "question": state["question"]}
+def retrieve(state: MessagesState):
+    messages = state["messages"]
+    
+    # Get the query data from the last system message
+    query_message = next((m for m in reversed(messages) if m.type == "system"), None)
+    last_human_message = next((m for m in reversed(messages) if m.type == "human"), None)
+    
+    if not query_message or not last_human_message:
+        return {"messages": [AIMessage(content="Missing query information.")]}
+    
+    try:
+        query = json.loads(query_message.content)
+        question = last_human_message.content
+        
+        if query["section"] != "all":
+            def metadata_filter(doc: Document) -> bool:
+                return doc.metadata.get("section") == query["section"]
+                
+            retrieved_products = vector_store.similarity_search(
+                query["query"],
+                k=3,
+                filter=metadata_filter  
+            )
+        else:
+            retrieved_products = vector_store.similarity_search(query["query"], k=3)
+        
+        # Create a context message with the retrieved products
+        context_content = "\n\n".join([doc.page_content for doc in retrieved_products])
+        
+        # Store the retrieved context as a FunctionMessage
+        return {"messages": [FunctionMessage(name="retrieve", content=context_content)]}
+    
+    except Exception as e:
+        return {"messages": [AIMessage(content=f"Error retrieving information: {str(e)}")]}
+
+
+def generation(state: MessagesState):
+    messages = state["messages"]
+    
+    # Get the context from the last function message
+    context_message = next((m for m in reversed(messages) if m.type == "function" and m.name == "retrieve"), None)
+    last_human_message = next((m for m in reversed(messages) if m.type == "human"), None)
+    
+    if not context_message or not last_human_message:
+        return {"messages": [AIMessage(content="Missing context or question.")]}
+    
+    context = context_message.content
+    question = last_human_message.content
+    
+    prompt_messages = prompt.invoke(
+        {"context": context, "question": question}
     )
-    response = llm.invoke(messages)
-    return {"answer": response}
+    
+    response = llm.invoke(prompt_messages)
+    
+    # Return the AI's response as an AIMessage
+    return {"messages": [response]}
 
 
 # image_data = graph.get_graph().draw_mermaid_png(output_file_path="graphs/rag_graph.png") 
@@ -120,7 +161,7 @@ def generation(state: State):
 # connecting retrieval and generation steps
 from langgraph.graph import START, StateGraph
 
-graph_builder = StateGraph(State)
+graph_builder = StateGraph(state_schema=MessagesState)
 graph_builder.add_node("analyze_query", analyze_query)
 graph_builder.add_node("retrieve", retrieve)
 graph_builder.add_node("generation", generation)
@@ -129,13 +170,33 @@ graph_builder.add_node("generation", generation)
 graph_builder.add_edge(START, "analyze_query")
 graph_builder.add_edge("analyze_query", "retrieve")
 graph_builder.add_edge("retrieve", "generation")
+graph_builder.add_edge("generation", END)
+
+
 graph = graph_builder.compile()
 
 
-# test run
-result = graph.invoke(
-    {"question": input("What product do you want to know about? ")}
-)
-print("Question:", result["question"])
-print("Analyzed Query:", result["query"])
-print("Answer:", result["answer"].content)
+#mermaid_markdown = graph.get_graph().draw_mermaid()
+
+
+# with open("graphs/rag_graph.mmd", "w") as f:
+#     f.write(mermaid_markdown)
+input_message = "Could you recommend me some good gaming laptops?"
+
+for step in graph.stream(
+    {"messages": [{"role": "user", "content": input_message}]},
+    stream_mode="values",
+):
+    step["messages"][-1].pretty_print()
+
+
+# # # test run
+# user_question = input("Enter your question: ")
+# result = graph.invoke(
+#     {"messages": [HumanMessage(content=user_question)]}
+# )
+
+# # Print results
+# print("Question:", user_question)
+# print("Answer:", result["messages"][-1].content)
+
