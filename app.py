@@ -153,6 +153,11 @@ def generation(state: MessagesState):
     # Return the AI's response as an AIMessage
     return {"messages": [response]}
 
+# Tools
+
+
+""" Tool Callings for the RAG pipeline"""
+
 
 # image_data = graph.get_graph().draw_mermaid_png(output_file_path="graphs/rag_graph.png") 
 # """this does not work""
@@ -172,9 +177,12 @@ graph_builder.add_edge("analyze_query", "retrieve")
 graph_builder.add_edge("retrieve", "generation")
 graph_builder.add_edge("generation", END)
 
+from langgraph.checkpoint.memory import MemorySaver
+checkpoint = MemorySaver()
+graph = graph_builder.compile(checkpointer=checkpoint)
 
-graph = graph_builder.compile()
-
+# Specify ID
+config = {"configurable": {"thread_id": "abc123"}}
 
 #mermaid_markdown = graph.get_graph().draw_mermaid()
 
