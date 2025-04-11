@@ -6,11 +6,12 @@ from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings
 from dotenv import load_dotenv
 import pickle
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 load_dotenv()
 os.environ["LANGSMITH_TRACING"] = "true"
 
 
-def process_and_save_data(csv_path = "pbtech_laptops_on_2025-04-08.csv", embeddings_dir = "embeddings"):
+def process_and_save_data(csv_path = "pbtech_computers_laptops_2025-04-11.csv", embeddings_dir = "embeddings"):
     
     os.makedirs(embeddings_dir, exist_ok=True)
     
@@ -20,25 +21,57 @@ def process_and_save_data(csv_path = "pbtech_laptops_on_2025-04-08.csv", embeddi
             csv_args={
                 "delimiter": ",",
                 "quotechar": '"',
-                "fieldnames": ['Product Name', 'Specification', 'Price']
+                "fieldnames": ['Product Name', 'Specification', 'Price', 'Detailed Features']
             }
         )
     
     data = loader.load()
+    processed_documents = []
+
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=500,
+        chunk_overlap=50,
+    )
     # add metadata to each product
 
 
     for i, product in enumerate(data): 
-        product.metadata["use_case"] = categorize_by_use_case(product)
-        product.metadata["price"] = categorize_price(product)
+        # Add metadata to base product
+        use_case = categorize_by_use_case(product)
+        price_category = categorize_price(product)
+        product.metadata["use_case"] = use_case
+        product.metadata["price"] = price_category
+        product.metadata["product_id"] = i
         
+        # Keep base product info
+        processed_documents.append(product)
+        
+        # Extract and chunk detailed features if they exist
+        if "Detailed Features" in product.metadata and product.metadata["Detailed Features"]:
+            detailed_text = product.metadata["Detailed Features"]
+            if detailed_text and len(detailed_text) > 100:  # Only chunk if substantial content
+                chunks = text_splitter.split_text(detailed_text)
+                
+                for j, chunk in enumerate(chunks):
+                    feature_doc = Document(
+                        page_content=chunk,
+                        metadata={
+                            "product_id": i,
+                            "chunk_id": j,
+                            "chunk_type": "detailed_features",
+                            "product_name": product.metadata.get("Product Name", ""),
+                            "use_case": use_case,
+                            "price": price_category
+                        }
+                    )
+                    processed_documents.append(feature_doc)
 
     # Create embeddings and vector store and save them to disk
-    vector_store = FAISS.from_documents(data, embeddings)
+    vector_store = FAISS.from_documents(processed_documents, embeddings)
     vector_store.save_local(folder_path=embeddings_dir)
 
     with open(f"{embeddings_dir}/documents.pkl", "wb") as f:
-        pickle.dump(data, f)
+        pickle.dump(processed_documents, f)
     return vector_store
 
 def categorize_by_use_case(product): 
@@ -92,6 +125,6 @@ def categorize_price(product):
         return "unknown"
 
 if __name__ == "__main__":
-    process_and_save_data("pbtech_laptops_on_2025-04-08.csv")
+    process_and_save_data("pbtech_computers_laptops_2025-04-11.csv")
     print("Finished Loading Data.")
 

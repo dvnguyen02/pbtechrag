@@ -84,20 +84,35 @@ def retrieve(query:str):
 def recommend_products(query:str, budget: float, use_case: str): 
     """ Recommend a (list) product to a customer based on a query"""
     query = f"Recommend me a laptop for {use_case} under {budget}"
-    retrieved_products = vector_store.similarity_search(query, k=5) # k=5 here since this might be a hard task which requires "lot more work" for the RAG
+    retrieved_products = vector_store.similarity_search(query, k=5)
     budget_filtered = []
+    
     for product in retrieved_products: 
-        price = product.page_content.split("Price: ")[1]
-        price = float(price)
-        if price <= budget: 
-            budget_filtered.append(product)
-    if budget_filtered: 
-        for product in retrieved_products: 
-            serialized = "\n\n".join(
-                f"Source: {product.metadata}\n" f"Content: {product.page_content}"
-            )
-    return serialized, retrieved_products
+        try:
+            if 'Price' in product.metadata and product.metadata['Price']:
+                price = float(product.metadata['Price'])
 
+                
+                if price <= budget:
+                    budget_filtered.append(product)
+        except (ValueError, IndexError) as e:
+            # Skip products with parsing issues
+            continue
+    
+    if budget_filtered: 
+        serialized = "\n\n".join(
+            f"Source: {product.metadata}\n" f"Content: {product.page_content}"
+            for product in budget_filtered
+        )
+        return serialized, budget_filtered
+    else:
+        # If no products match budget, return original results with warning
+        serialized = "No products found within your budget. Here are some alternatives:\n\n" + "\n\n".join(
+            f"Source: {product.metadata}\n" 
+            f"Content: {product.page_content}"
+            for product in retrieved_products
+        )
+        return serialized, retrieved_products
 
 @tool("compare_products", response_format="content_and_artifact")
 def compare_products(product1: str, product2: str,query: str): 
@@ -171,18 +186,38 @@ def explain_specs(spec_query: str):
         search_term = f"{specific_value} {search_term}"
         relevant_products = vector_store.similarity_search(search_term, k=2)
         return relevant_products
+
+@tool("get_detailed_features", response_format="content_and_artifact")
+def get_detailed_features(product_name: str):
+    """Get detailed features for a specific product."""
+    query = product_name if product_name else "laptop features"
+    filter_dict = {"chunk_type": "Detailed Features"}
+    
+    retrieved_chunks = vector_store.similarity_search(
+        query, 
+        k=5,
+        filter=filter_dict
+    )
+    
+    serialized = "\n\n".join(
+        f"Source: {chunk.metadata}\n" 
+        f"Features: {chunk.page_content}"
+        for chunk in retrieved_chunks
+    )
+    return serialized, retrieved_chunks
+
 # Genearte AI Message that may include a tool-call to be sent
 
 def query_or_respond(state: MessagesState):
     """Generate tool call for retrieval or respond."""
-    llm_with_tools = llm.bind_tools([retrieve, compare_products, explain_specs])
+    llm_with_tools = llm.bind_tools([retrieve, compare_products, explain_specs, recommend_products, get_detailed_features])
     response = llm_with_tools.invoke(state["messages"])
     # MessagesState appends messages to state instead of overwriting
     return {"messages": [response]}
 
 # Execute the tools
 from langgraph.prebuilt import ToolNode
-tools = ToolNode([compare_products, retrieve, explain_specs, recommend_products])
+tools = ToolNode([compare_products, retrieve, explain_specs, recommend_products, get_detailed_features])
 
 
 
