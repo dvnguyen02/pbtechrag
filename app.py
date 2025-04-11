@@ -5,7 +5,7 @@ import json
 from typing_extensions import List, TypedDict, Annotated
 from typing import Literal
 from langchain_openai import OpenAIEmbeddings
-from langchain_core.vectorstores import InMemoryVectorStore
+from langchain_community.vectorstores import Chroma
 from langchain_community.document_loaders import CSVLoader
 from langchain import hub
 from langchain_core.documents import Document
@@ -57,7 +57,7 @@ with trace("rag_pipline", projectname="simplerag") as tracer:
             product.metadata["section"] = "mid-range laptops"
         else: 
             product.metadata["section"] = "high-end/premium laptops"
-    vector_store = InMemoryVectorStore(embeddings)
+    vector_store = Chroma("simple_rag_storage", embeddings)
     data_ids = vector_store.add_documents(documents=data)
 
 
@@ -159,11 +159,12 @@ graph = graph_builder.compile(checkpointer=checkpoint)
 # Specify ID
 config = {"configurable": {"thread_id": "test10"}}  # Example ID
 
-#mermaid_markdown = graph.get_graph().draw_mermaid()
 
-
-# with open("graphs/rag_graph.mmd", "w") as f:
-#     f.write(mermaid_markdown)
+# Pipeline Graph
+mermaid_markdown = graph.get_graph().draw_mermaid()
+with open("graphs/rag_graph2.mmd", "w") as f:
+    f.write(mermaid_markdown)
+    
 input_message = "Could you recommend me a laptop that is cheapest?"
 
 for step in graph.stream(
