@@ -56,7 +56,7 @@ from langchain_core.tools import tool
 @tool("retrieve",response_format="content_and_artifact")
 def retrieve(query:str):
     """Retrieve a product related to a query."""
-    retrieved_products = vector_store.similarity_search(query, k=2)
+    retrieved_products = vector_store.similarity_search(query, k=5)
     serialized = "\n\n".join(
         (f"Source: {product.metadata}\n" f"Content: {product.page_content}")
         for product in retrieved_products
@@ -255,24 +255,26 @@ def build_langgraph():
 
 if __name__ == "__main__": 
         
-    # Specify ID
-    config = {"configurable": {"thread_id": "test18"}}  # Example ID
-    graph = build_langgraph()
-    input_message2 = "Recommend me a laptop that is under 3000 for gaming"
-    for step in graph.stream(
-        {"messages": [{"role": "user", "content": input_message2}]},
-        stream_mode="values",
-        config=config
-    ):
-        step["messages"][-1].pretty_print()
     
-    input_message3 = "What does graphic here mean in this laptop?"
-    for step in graph.stream(
-        {"messages": [{"role": "user", "content": input_message3}]},
-        stream_mode="values",
-        config=config
-    ):
-        step["messages"][-1].pretty_print()
+    graph = build_langgraph()
+    import uuid
+    thread_id = str(uuid.uuid4())
+    config = {"configurable": {"thread_id": thread_id}}
+    while True:
+        user_input = input("\nYou: ")
+        
+        if user_input.lower().strip() == "exit":
+            print("Exiting conversation. Goodbye!")
+            break
+        
+        # Process the user input through the graph
+        for step in graph.stream(
+            {"messages": [{"role": "user", "content": user_input}]},
+            stream_mode="values",
+            config=config
+        ):
+            print("\nAssistant:", end=" ")
+            step["messages"][-1].pretty_print()
 
 
     # Pipeline Graph
