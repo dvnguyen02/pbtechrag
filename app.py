@@ -7,20 +7,40 @@ from typing import Literal
 from langchain_openai import OpenAIEmbeddings
 #from langchain_core.vectorstores import InMemoryVectorStore
 from langchain_community.vectorstores import FAISS
-from langchain_community.document_loaders import CSVLoader
 from langchain import hub
 from langchain_core.documents import Document
 from langgraph.graph import START, END, StateGraph, MessagesState
 from langchain_core.tools import tool
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, FunctionMessage
+from langgraph.prebuilt import tools_condition
+
 # environment setup
 load_dotenv()
 os.environ["LANGSMITH_TRACING"] = "true"
 
 # init components
 llm = ChatOpenAI(model = "gpt-4o")
-embeddings = OpenAIEmbeddings(model = "text-embedding-3-large")
 prompt = hub.pull("rlm/rag-prompt")
+
+
+# Load pre computed embeddings
+embeddings_dir = "embeddings"
+vector_store = None
+
+def load_vector_store():
+    """Load the vector store from disk"""
+    global vector_store
+    if vector_store is None:
+        embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
+        if os.path.exists(embeddings_dir):
+            print(f"Loading embeddings from {embeddings_dir}")
+            vector_store = FAISS.load_local(embeddings_dir, embeddings)
+        else:
+            raise FileNotFoundError(
+                f"Embeddings directory {embeddings_dir} not found. "
+                
+            )
+    return vector_store
 
 # search chema
 
@@ -29,45 +49,21 @@ prompt = hub.pull("rlm/rag-prompt")
 # search = Search(query="ASUS laptop", section="beginning") 
 # -> this would only search for the ASUS laptops in the beginning section of the product catalog.
 
-class Search(TypedDict): 
-    query: Annotated[str, ... , "Search query to run"]
-    section: Annotated[
-        Literal["entry-level laptops", "mid-range laptops", "high-end/premium laptops", "all"], ... , 
-        "Section of the products to search"
-    ]
+# class Search(TypedDict): 
+#     query: Annotated[str, ... , "Search query to run"]
+#     section: Annotated[
+#         Literal["entry-level laptops", "mid-range laptops", "high-end/premium laptops", "all"], ... , 
+#         "Section of the products to search"
+#     ]
 
-from langchain_core.documents import Document
-# Load and process data
-from langsmith import trace
-with trace("rag_pipline", projectname="simplerag") as tracer:
-    from langchain_community.document_loaders import CSVLoader
-    loader = CSVLoader(file_path = "pbtech_laptops_on_2025-04-08.csv",
-                    csv_args= {"delimiter": ",",
-                                'quotechar': '"',
-                                'fieldnames': ['Product Name', 'Specification', 'Price']})
-
-    data = loader.load()
-    # add metadata to each product
-    total_products = len(data)
-    third = total_products // 3
-    
-    for i, product in enumerate(data): 
-        if i < third: 
-            product.metadata["section"] = "entry-level laptops"
-        elif i < 2*third: 
-            product.metadata["section"] = "mid-range laptops"
-        else: 
-            product.metadata["section"] = "high-end/premium laptops"
-    vector_store = FAISS(embeddings)
-    data_ids = vector_store.add_documents(documents=data)
 
 
 # retrieve function
 from langchain_core.tools import tool
-
 @tool("retrieve",response_format="content_and_artifact")
 def retrieve(query:str):
     """Retrieve a product related to a query."""
+    vector_store = load_vector_store()
     retrieved_products = vector_store.similarity_search(query, k=2)
     serialized = "\n\n".join(
         (f"Source: {product.metadata}\n" f"Content: {product.page_content}")
@@ -90,11 +86,12 @@ def retrieve(query:str):
 #     )
 #         return serialized_k_products, retrieve_k_products
 
-# Compare product tools
+# Compare product tool
 
 @tool("compare_products", response_format="content_and_artifact")
 def compare_products(product1: str, product2: str,query: str): 
     """Compare products related to a query"""
+    vector_store = load_vector_store()
     product1_specs = vector_store.similarity_search(product1, k=1)
     product2_specs = vector_store.similarity_search(product2, k=1)
     if product1_specs and product2_specs: 
@@ -109,7 +106,7 @@ def compare_products(product1: str, product2: str,query: str):
     else: 
         return f"Cound not find detailed specificaiton about one or another."
 
-# Step 1: Genearte AI Message that may include a tool-call to be sent
+# Genearte AI Message that may include a tool-call to be sent
 
 def query_or_respond(state: MessagesState):
     """Generate tool call for retrieval or respond."""
@@ -118,13 +115,13 @@ def query_or_respond(state: MessagesState):
     # MessagesState appends messages to state instead of overwriting
     return {"messages": [response]}
 
-# Step 2: Execute the Retrieval
+# Execute the tools
 from langgraph.prebuilt import ToolNode
 tools = ToolNode([compare_products, retrieve])
 
 
 
-# Step 3: Generate reponse using retrieved product
+# generate reponse using tool
 def generate(state: MessagesState):
     """Generate answer."""
     # Get generated ToolMessages
@@ -169,8 +166,6 @@ def generate(state: MessagesState):
 
 graph_builder = StateGraph(state_schema=MessagesState)
 
-from langgraph.graph import END
-from langgraph.prebuilt import tools_condition
 
 graph_builder.add_node(query_or_respond)
 graph_builder.add_node(tools)
