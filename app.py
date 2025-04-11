@@ -5,7 +5,7 @@ import json
 from typing_extensions import List, TypedDict, Annotated
 from typing import Literal
 from langchain_openai import OpenAIEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_core.vectorstores import InMemoryVectorStore
 from langchain_community.document_loaders import CSVLoader
 from langchain import hub
 from langchain_core.documents import Document
@@ -57,7 +57,7 @@ with trace("rag_pipline", projectname="simplerag") as tracer:
             product.metadata["section"] = "mid-range laptops"
         else: 
             product.metadata["section"] = "high-end/premium laptops"
-    vector_store = Chroma("simple_rag_storage", embeddings)
+    vector_store = InMemoryVectorStore(embeddings)
     data_ids = vector_store.add_documents(documents=data)
 
 
