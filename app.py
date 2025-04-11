@@ -5,7 +5,8 @@ import json
 from typing_extensions import List, TypedDict, Annotated
 from typing import Literal
 from langchain_openai import OpenAIEmbeddings
-from langchain_core.vectorstores import InMemoryVectorStore
+#from langchain_core.vectorstores import InMemoryVectorStore
+from langchain_community.vectorstores import FAISS
 from langchain_community.document_loaders import CSVLoader
 from langchain import hub
 from langchain_core.documents import Document
@@ -57,16 +58,16 @@ with trace("rag_pipline", projectname="simplerag") as tracer:
             product.metadata["section"] = "mid-range laptops"
         else: 
             product.metadata["section"] = "high-end/premium laptops"
-    vector_store = InMemoryVectorStore(embeddings)
+    vector_store = FAISS(embeddings)
     data_ids = vector_store.add_documents(documents=data)
 
 
 # retrieve function
 from langchain_core.tools import tool
 
-@tool(response_format="content_and_artifact")
-def retrieve(query: str):
-    """Retrieve information related to a query."""
+@tool("retrieve",response_format="content_and_artifact")
+def retrieve(query:str):
+    """Retrieve a product related to a query."""
     retrieved_products = vector_store.similarity_search(query, k=2)
     serialized = "\n\n".join(
         (f"Source: {product.metadata}\n" f"Content: {product.page_content}")
@@ -74,18 +75,52 @@ def retrieve(query: str):
     )
     return serialized, retrieved_products
 
+
+# ------------------------- Maybe Unecessary ------------------------------------------
+# @tool("retrieve_top_k_products", response_format="content_and_artifact")
+# def retrieve_top_k_products(query: str, k:int):
+#     """Retrieve top k products related to a query"""
+#     if k > 5:
+#         return f"Try the prompt again, we are not allowed to search more than 5 products"
+#     else: 
+#         retrieve_k_products = vector_store.similarity_search(query, k=k)
+#         serialized_k_products = "\n\n".join(
+#         (f"Source: {product.metadata}\n" f"Content: {product.page_content}")
+#         for product in retrieve_k_products
+#     )
+#         return serialized_k_products, retrieve_k_products
+
+# Compare product tools
+
+@tool("compare_products", response_format="content_and_artifact")
+def compare_products(product1: str, product2: str,query: str): 
+    """Compare products related to a query"""
+    product1_specs = vector_store.similarity_search(product1, k=1)
+    product2_specs = vector_store.similarity_search(product2, k=1)
+    if product1_specs and product2_specs: 
+        p1_content = product1_specs[0].page_content
+        p2_content = product2_specs[0].page_content
+        comparision = { 
+            f" Comparision between {product1} and {product2} based on {query}: \n\n"
+             f"Product : {p1_content} \n\n"
+            f"Product 2": {p2_content}
+        }
+        return comparision, [product1_specs[0], product2_specs[0]]
+    else: 
+        return f"Cound not find detailed specificaiton about one or another."
+
 # Step 1: Genearte AI Message that may include a tool-call to be sent
 
 def query_or_respond(state: MessagesState):
     """Generate tool call for retrieval or respond."""
-    llm_with_tools = llm.bind_tools([retrieve])
+    llm_with_tools = llm.bind_tools([retrieve, compare_products])
     response = llm_with_tools.invoke(state["messages"])
     # MessagesState appends messages to state instead of overwriting
     return {"messages": [response]}
 
 # Step 2: Execute the Retrieval
 from langgraph.prebuilt import ToolNode
-tools = ToolNode([retrieve])
+tools = ToolNode([compare_products, retrieve])
 
 
 
@@ -135,7 +170,7 @@ def generate(state: MessagesState):
 graph_builder = StateGraph(state_schema=MessagesState)
 
 from langgraph.graph import END
-from langgraph.prebuilt import ToolNode, tools_condition
+from langgraph.prebuilt import tools_condition
 
 graph_builder.add_node(query_or_respond)
 graph_builder.add_node(tools)
@@ -157,25 +192,24 @@ checkpoint = MemorySaver()
 graph = graph_builder.compile(checkpointer=checkpoint)
 
 # Specify ID
-config = {"configurable": {"thread_id": "test10"}}  # Example ID
+config = {"configurable": {"thread_id": "test17"}}  # Example ID
 
 
 # Pipeline Graph
-mermaid_markdown = graph.get_graph().draw_mermaid()
-with open("graphs/rag_graph2.mmd", "w") as f:
-    f.write(mermaid_markdown)
+# mermaid_markdown = graph.get_graph().draw_mermaid()
+# with open("graphs/rag_graph2.mmd", "w") as f:
+#     f.write(mermaid_markdown)
     
-input_message = "Could you recommend me a laptop that is cheapest?"
+# input_message = "Compare between Acer NZ Remanufactured NX.VR3SA.005 Flip 2in1 Edu Laptop 11.6"" FHD Touch and Lenovo 500e Yoga G4 12.2"" WUXGA Touch Chromebook?"
 
-for step in graph.stream(
-    {"messages": [{"role": "user", "content": input_message}]},
-    stream_mode="values",
-    config=config
-):
-    step["messages"][-1].pretty_print()
+# for step in graph.stream(
+#     {"messages": [{"role": "user", "content": input_message}]},
+#     stream_mode="values",
+#     config=config
+# ):
+#     step["messages"][-1].pretty_print()
 
-input_message2 = "What was its specification again?"
-
+input_message2 = "What are the prices of Lenovo IdeaPad 1 15AMN7 15.6"" FHD Laptop, HP 15-fc0432AU 15.6"" FHD, Dell Inspiron 3000 series 3520 15.6"" FHD, ASUS Vivobook Go E1504FA 15.6"" FHD, HP 15-fc0430AU 15.6"" FHD"
 for step in graph.stream(
     {"messages": [{"role": "user", "content": input_message2}]},
     stream_mode="values",
