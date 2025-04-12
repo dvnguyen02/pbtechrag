@@ -1,0 +1,100 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
+    padding: 20px;
+}
+.chat-container {
+    max-width: 800px;
+    margin: 0 auto;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    padding: 20px;
+}
+.chat-box {
+    height: 400px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+.user-message {
+    background-color: #e3f2fd;
+    padding: 10px 15px;
+    border-radius: 15px;
+    margin-bottom: 10px;
+    max-width: 70%;
+    margin-left: auto;
+}
+.assistant-message {
+    background-color: #f1f1f1;
+    padding: 10px 15px;
+    border-radius: 15px;
+    margin-bottom: 10px;
+    max-width: 70%;
+}
+.assistant-message strong, 
+.assistant-message b {
+    color: #0d6efd;
+}
+.assistant-message h3, 
+.assistant-message h4, 
+.assistant-message h5 {
+    margin-top: 10px;
+    margin-bottom: 5px;
+    color: #212529;
+}
+.assistant-message p {
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+.assistant-message ul, 
+.assistant-message ol {
+    margin-top: 5px;
+    margin-bottom: 5px;
+    padding-left: 25px;
+}
+.assistant-message li {
+    margin-bottom: 3px;
+}
+.assistant-message table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 10px 0;
+}
+.assistant-message table, 
+.assistant-message th, 
+.assistant-message td {
+    border: 1px solid #ddd;
+}
+.assistant-message th, 
+.assistant-message td {
+    padding: 8px;
+    text-align: left;
+}
+.assistant-message th {
+    background-color: #f2f2f2;
+}
+.tool-message {
+    background-color: #fff3cd;
+    padding: 10px 15px;
+    border-radius: 15px;
+    margin-bottom: 10px;
+    max-width: 70%;
+    font-family: monospace;
+    font-size: 0.9rem;
+}
+.example-queries {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+}
+.example-query {
+    cursor: pointer;
+    color: #0d6efd;
+    text-decoration: underline;
+    margin-bottom: 5px;
+    display: block;
+}
