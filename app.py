@@ -20,8 +20,8 @@ os.environ["LANGSMITH_TRACING"] = "true"
 
 # init components
 llm = ChatOpenAI(model = "gpt-4o")
-prompt = hub.pull("rlm/rag-prompt")
-
+# prompt = hub.pull("rlm/rag-prompt") Not needed
+ 
 
 # Load pre computed embeddings
 embeddings_dir = "embeddings"
@@ -191,7 +191,7 @@ def explain_specs(spec_query: str):
 def get_detailed_features(product_name: str):
     """Get detailed features for a specific product."""
     query = product_name if product_name else "laptop features"
-    filter_dict = {"chunk_type": "Detailed Features"}
+    filter_dict = {"chunk_type": "detailed_features"}
     
     retrieved_chunks = vector_store.similarity_search(
         query, 
@@ -236,14 +236,19 @@ def generate(state: MessagesState):
     # Format into prompt
     docs_content = "\n\n".join(doc.content for doc in tool_messages)
     system_message_content = (
-        "You are an assistant for question-answering tasks. "
-        "Use the following pieces of retrieved context to answer "
-        "the question. If you don't know the answer, say that you "
-        "don't know. Use three sentences maximum and keep the "
-        "answer concise."
-        "\n\n"
-        f"{docs_content}"
-    )
+    "You are a helpful and knowledgeable assistant for an electronics retailer. "
+    "Your job is to answer customer queries using information retrieved from PB Tech’s website, "
+    "which includes product descriptions, specifications, pricing, availability, and customer reviews. "
+    "Always respond in a clear, friendly, and professional tone.\n\n"
+    "If a user asks about a specific product (e.g., 'Is the Logitech MX Master 3 good for work?'), "
+    "provide a concise and informative summary using the retrieved product information.\n\n"
+    "If a user wants to compare products (e.g., 'What's better, the MacBook Air or Dell XPS 13?'), "
+    "outline key differences based on features, performance, and pricing.\n\n"
+    "If the question can't be answered from the available data, politely explain that and suggest the user "
+    "check PB Tech’s website for the most up-to-date information.\n\n"
+    "Use the following context to inform your answer:\n\n"
+    f"{docs_content}"
+)
     conversation_messages = [
         message
         for message in state["messages"]
