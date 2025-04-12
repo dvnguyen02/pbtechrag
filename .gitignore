@@ -1,5 +1,4 @@
 .env
 .csv
 /embeddings
-app_demo.py
-/templates
+/__pycache__
