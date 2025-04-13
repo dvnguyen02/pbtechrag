@@ -55,7 +55,7 @@ def process_and_save_data(csv_path = "pbtech_computers_laptops_2025-04-11.csv", 
     return vector_store
 
 def categorize_by_use_case(product): 
-    """Determine the use case based on laptop"""
+    """Determine the use case based on laptop for metadata"""
     specs = product.page_content.lower()
     
     if "gaming" in specs or "rtx" in specs or "rx" in specs or "nvidia" in specs:
@@ -88,10 +88,9 @@ def categorize_price(product):
             return "unknown"
         
         # Extract numeric value (remove $ and other non-numeric characters)
-        price_numeric = ''.join([c for c in price_str if c.isdigit() or c == '.'])
         
         # Convert to float for comparison
-        price = float(price_numeric)
+        price = float(price)
         
         if price < 600: 
             return "budget"
