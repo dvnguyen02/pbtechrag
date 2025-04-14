@@ -21,7 +21,7 @@ def process_and_save_data(csv_path = "pbtech_computers_laptops_2025-04-11.csv", 
             csv_args={
                 "delimiter": ",",
                 "quotechar": '"',
-                "fieldnames": ['Product Name', 'Specification', 'Price', 'Detailed Features']
+                "fieldnames": ['Product Name', 'Category','General Specs', 'Detailed Specs', 'Price', 'Product URL']
             }
         )
     
@@ -45,26 +45,6 @@ def process_and_save_data(csv_path = "pbtech_computers_laptops_2025-04-11.csv", 
         
         # Keep base product info
         processed_documents.append(product)
-        
-        # Extract and chunk detailed features if they exist
-        if "Detailed Features" in product.metadata and product.metadata["Detailed Features"]:
-            detailed_text = product.metadata["Detailed Features"]
-            if detailed_text and len(detailed_text) > 100:  # Only chunk if substantial content
-                chunks = text_splitter.split_text(detailed_text)
-                
-                for j, chunk in enumerate(chunks):
-                    feature_doc = Document(
-                        page_content=chunk,
-                        metadata={
-                            "product_id": i,
-                            "chunk_id": j,
-                            "chunk_type": "detailed_features",
-                            "product_name": product.metadata.get("Product Name", ""),
-                            "use_case": use_case,
-                            "price": price_category
-                        }
-                    )
-                    processed_documents.append(feature_doc)
 
     # Create embeddings and vector store and save them to disk
     vector_store = FAISS.from_documents(processed_documents, embeddings)
@@ -94,7 +74,7 @@ def categorize_by_use_case(product):
         return "General Purpose"
 
 def categorize_price(product): 
-    """Determine price-range category"""
+    """Determine price-range category for metadata"""
     try:
         page_content = product.page_content
         # Extract price from the content, accounting for different formats
@@ -125,6 +105,6 @@ def categorize_price(product):
         return "unknown"
 
 if __name__ == "__main__":
-    process_and_save_data("pbtech_computers_laptops_2025-04-11.csv")
+    process_and_save_data()
     print("Finished Loading Data.")
 

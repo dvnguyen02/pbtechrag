@@ -187,11 +187,11 @@ def explain_specs(spec_query: str):
         relevant_products = vector_store.similarity_search(search_term, k=2)
         return relevant_products
 
-@tool("get_detailed_features", response_format="content_and_artifact")
-def get_detailed_features(product_name: str):
+@tool("get_detailed_specs", response_format="content_and_artifact")
+def get_detailed_specs(product_name: str):
     """Get detailed features for a specific product."""
-    query = product_name if product_name else "laptop features"
-    filter_dict = {"chunk_type": "detailed_features"}
+    query = product_name if product_name else "laptop specs"
+    filter_dict = {"chunk_type": "detailed_specs"}
     
     retrieved_chunks = vector_store.similarity_search(
         query, 
@@ -210,14 +210,14 @@ def get_detailed_features(product_name: str):
 
 def query_or_respond(state: MessagesState):
     """Generate tool call for retrieval or respond."""
-    llm_with_tools = llm.bind_tools([retrieve, compare_products, explain_specs, recommend_products, get_detailed_features])
+    llm_with_tools = llm.bind_tools([retrieve, compare_products, explain_specs, recommend_products, get_detailed_specs])
     response = llm_with_tools.invoke(state["messages"])
     # MessagesState appends messages to state instead of overwriting
     return {"messages": [response]}
 
 # Execute the tools
 from langgraph.prebuilt import ToolNode
-tools = ToolNode([compare_products, retrieve, explain_specs, recommend_products, get_detailed_features])
+tools = ToolNode([compare_products, retrieve, explain_specs, recommend_products, get_detailed_specs])
 
 
 
@@ -236,9 +236,10 @@ def generate(state: MessagesState):
     # Format into prompt
     docs_content = "\n\n".join(doc.content for doc in tool_messages)
     system_message_content = (
-    "You are a helpful and knowledgeable assistant for an electronics retailer. "
+    "You work for PBTech."
+    "You are a helpful and knowledgeable assistant for PBTech, an electronics retailer. "
     "Your job is to answer customer queries using information retrieved from PB Tech’s website, "
-    "which includes product descriptions, specifications, pricing, availability, and customer reviews. "
+    "which includes product descriptions, specifications, pricing. "
     "Always respond in a clear, friendly, and professional tone.\n\n"
     "If a user asks about a specific product (e.g., 'Is the Logitech MX Master 3 good for work?'), "
     "provide a concise and informative summary using the retrieved product information.\n\n"
@@ -310,7 +311,7 @@ if __name__ == "__main__":
         # Process the user input through the graph
         for step in graph.stream(
             {"messages": [{"role": "user", "content": user_input}]},
-            stream_mode="values",
+            stream_mode=["updates", "messages"],
             config=config
         ):
             print("\nAssistant:", end=" ")
@@ -322,7 +323,6 @@ if __name__ == "__main__":
     # with open("graphs/rag_graph2.mmd", "w") as f:
     #     f.write(mermaid_markdown)
         
-    # input_message = "Compare between Acer NZ Remanufactured NX.VR3SA.005 Flip 2in1 Edu Laptop 11.6"" FHD Touch and Lenovo 500e Yoga G4 12.2"" WUXGA Touch Chromebook?"
 
     # for step in graph.stream(
     #     {"messages": [{"role": "user", "content": input_message}]},
