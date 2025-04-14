@@ -2,3 +2,6 @@
 .csv
 /embeddings
 /__pycache__
+/client
+index-js.js
+package-json.json

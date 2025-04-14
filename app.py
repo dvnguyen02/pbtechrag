@@ -13,13 +13,13 @@ from langgraph.graph import START, END, StateGraph, MessagesState
 from langchain_core.tools import tool
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, FunctionMessage
 from langgraph.prebuilt import tools_condition
-
+import pandas as pd
 # environment setup
 load_dotenv()
 os.environ["LANGSMITH_TRACING"] = "true"
 
 # init components
-llm = ChatOpenAI(model = "gpt-4o")
+llm = ChatOpenAI(model = "gpt-4o-mini")
 # prompt = hub.pull("rlm/rag-prompt") Not needed
  
 
@@ -56,7 +56,7 @@ from langchain_core.tools import tool
 @tool("retrieve",response_format="content_and_artifact")
 def retrieve(query:str):
     """Retrieve a product related to a query."""
-    retrieved_products = vector_store.similarity_search(query, k=5)
+    retrieved_products = vector_store.similarity_search(query, k=2)
     serialized = "\n\n".join(
         (f"Source: {product.metadata}\n" f"Content: {product.page_content}")
         for product in retrieved_products
@@ -84,7 +84,7 @@ def retrieve(query:str):
 def recommend_products(query:str, budget: float, use_case: str): 
     """ Recommend a (list) product to a customer based on a query"""
     query = f"Recommend me a laptop for {use_case} under {budget}"
-    retrieved_products = vector_store.similarity_search(query, k=5)
+    retrieved_products = vector_store.similarity_search(query, k=2)
     budget_filtered = []
     
     for product in retrieved_products: 
@@ -107,7 +107,7 @@ def recommend_products(query:str, budget: float, use_case: str):
         return serialized, budget_filtered
     else:
         # If no products match budget, return original results with warning
-        serialized = "No products found within your budget. Here are some alternatives:\n\n" + "\n\n".join(
+        serialized = "No products found within the budget. Here are some alternatives that are close:\n\n" + "\n\n".join(
             f"Source: {product.metadata}\n" 
             f"Content: {product.page_content}"
             for product in retrieved_products
@@ -131,93 +131,132 @@ def compare_products(product1: str, product2: str,query: str):
     else: 
         return f"Cound not find detailed specificaiton about one or another."
 
+@tool("get_products_total", response_format="content_and_artifact")
+def get_products_total(query: str): 
+    """Get total number of products in the database"""
+    try: 
+        total_products = len(vector_store.index_to_docstore_id)
+        response = f"There are {total_products} laptops in stock."
+        return response, []
+    except Exception as e:
+        return f"Error retrieving total amount of laptops", []
+    
+@tool("get_newest_product", response_format="content_and_artifact")
+def get_newest_product(query: str):
+    """Get the newest product in the database"""
+    try: 
+        max_index = max(vector_store.index_to_docstore_id.keys())
+        doc_id = vector_store.index_to_docstore_id[max_index]
+        latest_product = vector_store.docstore.search(doc_id)
+        if latest_product: 
+            response = f"The newest product in our database is: {latest_product.metadata.get('Product Name', 'Unknown')}\n\n"
+            response += f"Details:{latest_product.page_content}"
+            return response, [latest_product]
+    except Exception as e: 
+        return f"Could not retrieve the product", []
+    
+# --------------------------Probably not needed-----------------------------
+# @tool("explain_specs", response_format="content_and_artifact")
+# def explain_specs(spec_query: str):
+#     """
+#     Explain technical specifications in simple terms refer to the product that a customer asks.
+    
+#     """
+#     explanation = { 
+#         "cpu": "The CPU is the brain of the computer. Higher numbers generally mean better performance",
+#         "ram": "RAM is computer's short term memory, 8GB is good, 16GB is recommended to most users, and 32GB is for demanding tasks like gaming or video editing",
+#         "ssd": "SSDs store your files and program. They're are faster than normal HHD",
+#         "hhd": "HHDS also store your files and program but it is slower than SSDs.",
+#         "gpu": "The GPU handles graphic processing. Integrated graphics are OK for basic tasks like office tasks, but for tasks like training AI Models or gaming may require dedicated GPUS.",
+#         "display": "Display quality affects what you see. FHD is standard resolution, IPS panels generally have better colors than the standard displays."
+#     }
+#     # check common terms that might be in the query
+#     spec_query_lower = spec_query.lower()
+    
+#     if "processor" in spec_query_lower or "cpu" in spec_query_lower: 
+#         spec_type = "processor"
+#         return explanation["cpu"], []
+#     elif "ram" in spec_query_lower or "memory" in spec_query_lower: 
+#         spec_type = "ram"
+#         return explanation["ram"], []
+#     elif "ssd" in spec_query_lower or "solid state drive" in spec_query_lower:
+#         spec_type = "ssd"
+#         return explanation["ssd"], []
+#     elif "hhd" in spec_query_lower or "hard drive": 
+#         spec_type = "hhd"
+#         return explanation["hhd"], []
+#     elif "gpu" in spec_query_lower or "graphic card" in spec_query_lower: 
+#         spec_type = "gpu"
+#         return explanation["gpu"], []
+#     elif "display" in spec_query_lower:
+#         spec_type = "display"
+#         return explanation["display"], []
+    
+#     value_terms = {
+#         "cpu": ["ryzen", "intel", "core i7", "core i5", "core i3", "amd"],
+#         "ram": ["8gb", "16gb", "32gb", "ddr4", "ddr5"],
+#         "ssd": ["256gb", "512gb", "1tb", "nvme"],
+#         "hdd": ["1tb", "2tb"],
+#         "gpu": ["rtx", "gtx", "radeon", "nvidia", "integrated"],
+#         "display": ["fhd", "uhd", "4k", "ips", "oled"]
+#     }
+#     specific_value = None
+#     if spec_type in value_terms: 
+#         for term in value_terms[spec_type]: 
+#             if term in spec_query_lower: 
+#                 specific_value = term
 
-@tool("explain_specs", response_format="content_and_artifact")
-def explain_specs(spec_query: str):
-    """
-    Explain technical specifications in simple terms refer to the product that a customer asks.
-    
-    """
-    explanation = { 
-        "cpu": "The CPU is the brain of the computer. Higher numbers generally mean better performance",
-        "ram": "RAM is computer's short term memory, 8GB is good, 16GB is recommended to most users, and 32GB is for demanding tasks like gaming or video editing",
-        "ssd": "SSDs store your files and program. They're are faster than normal HHD",
-        "hhd": "HHDS also store your files and program but it is slower than SSDs.",
-        "gpu": "The GPU handles graphic processing. Integrated graphics are OK for basic tasks like office tasks, but for tasks like training AI Models or gaming may require dedicated GPUS.",
-        "display": "Display quality affects what you see. FHD is standard resolution, IPS panels generally have better colors than the standard displays."
-    }
-    # check common terms that might be in the query
-    spec_query_lower = spec_query.lower()
-    
-    if "processor" in spec_query_lower or "cpu" in spec_query_lower: 
-        spec_type = "processor"
-        return explanation["cpu"], []
-    elif "ram" in spec_query_lower or "memory" in spec_query_lower: 
-        spec_type = "ram"
-        return explanation["ram"], []
-    elif "ssd" in spec_query_lower or "solid state drive" in spec_query_lower:
-        spec_type = "ssd"
-        return explanation["ssd"], []
-    elif "hhd" in spec_query_lower or "hard drive": 
-        spec_type = "hhd"
-        return explanation["hhd"], []
-    elif "gpu" in spec_query_lower or "graphic card" in spec_query_lower: 
-        spec_type = "gpu"
-        return explanation["gpu"], []
-    elif "display" in spec_query_lower:
-        spec_type = "display"
-        return explanation["display"], []
-    
-    value_terms = {
-        "cpu": ["ryzen", "intel", "core i7", "core i5", "core i3", "amd"],
-        "ram": ["8gb", "16gb", "32gb", "ddr4", "ddr5"],
-        "ssd": ["256gb", "512gb", "1tb", "nvme"],
-        "hdd": ["1tb", "2tb"],
-        "gpu": ["rtx", "gtx", "radeon", "nvidia", "integrated"],
-        "display": ["fhd", "uhd", "4k", "ips", "oled"]
-    }
-    specific_value = None
-    if spec_type in value_terms: 
-        for term in value_terms[spec_type]: 
-            if term in spec_query_lower: 
-                specific_value = term
-
-    if specific_value: 
-        search_term = f"{specific_value} {search_term}"
-        relevant_products = vector_store.similarity_search(search_term, k=2)
-        return relevant_products
+#     if specific_value: 
+#         search_term = f"{specific_value} {search_term}"
+#         relevant_products = vector_store.similarity_search(search_term, k=2)
+#         return relevant_products, []
 
 @tool("get_detailed_specs", response_format="content_and_artifact")
 def get_detailed_specs(product_name: str):
     """Get detailed features for a specific product."""
-    query = product_name if product_name else "laptop specs"
-    filter_dict = {"chunk_type": "detailed_specs"}
+    # Create a more targeted query to find detailed specifications
+    if not product_name or product_name.strip() == "":
+        return "Please provide a valid product name.", []
     
-    retrieved_chunks = vector_store.similarity_search(
-        query, 
-        k=5,
-        filter=filter_dict
-    )
+    # Create a query that specifically looks for specifications
+    query = f"{product_name} technical specifications details features"
     
-    serialized = "\n\n".join(
-        f"Source: {chunk.metadata}\n" 
-        f"Features: {chunk.page_content}"
-        for chunk in retrieved_chunks
-    )
-    return serialized, retrieved_chunks
+    try:
+        # Retrieve relevant chunks without filtering by metadata
+        retrieved_chunks = vector_store.similarity_search(
+            query,
+            k=2
+        )
+        
+        if not retrieved_chunks:
+            return f"No specifications found for {product_name}.", []
+        
+        # Format the results with clear section headers
+        serialized = "\n\n".join(
+            f"PRODUCT INFO: {chunk.metadata.get('product_name', product_name)}\n" 
+            f"SOURCE: {chunk.metadata.get('source', 'Unknown')}\n"
+            f"SPECIFICATIONS:\n{chunk.page_content}"
+            for chunk in retrieved_chunks
+        )
+        
+        return serialized, retrieved_chunks
+        
+    except Exception as e:
+        error_msg = f"Error retrieving specifications: {str(e)}"
+        return error_msg, []
 
 # Genearte AI Message that may include a tool-call to be sent
 
 def query_or_respond(state: MessagesState):
     """Generate tool call for retrieval or respond."""
-    llm_with_tools = llm.bind_tools([retrieve, compare_products, explain_specs, recommend_products, get_detailed_specs])
+    llm_with_tools = llm.bind_tools([get_newest_product,retrieve, compare_products, recommend_products, get_detailed_specs, get_products_total])
     response = llm_with_tools.invoke(state["messages"])
     # MessagesState appends messages to state instead of overwriting
     return {"messages": [response]}
 
 # Execute the tools
 from langgraph.prebuilt import ToolNode
-tools = ToolNode([compare_products, retrieve, explain_specs, recommend_products, get_detailed_specs])
+tools = ToolNode([get_newest_product,compare_products, retrieve, recommend_products, get_detailed_specs, get_products_total])
 
 
 
@@ -236,7 +275,8 @@ def generate(state: MessagesState):
     # Format into prompt
     docs_content = "\n\n".join(doc.content for doc in tool_messages)
     system_message_content = (
-    "You work for PBTech."
+    "You can not give any information of if you are/work for openAI."
+    "You are a PBTech worker."
     "You are a helpful and knowledgeable assistant for PBTech, an electronics retailer. "
     "Your job is to answer customer queries using information retrieved from PB Tech’s website, "
     "which includes product descriptions, specifications, pricing. "
@@ -265,7 +305,7 @@ def generate(state: MessagesState):
 
 
 # image_data = graph.get_graph().draw_mermaid_png(output_file_path="graphs/rag_graph.png") 
-# """this does not work""
+# """this does not work"""
 
 # control flow using graph object
 # connecting retrieval and generation steps
@@ -300,28 +340,30 @@ if __name__ == "__main__":
     graph = build_langgraph()
     import uuid
     thread_id = str(uuid.uuid4())
-    config = {"configurable": {"thread_id": thread_id}}
-    while True:
-        user_input = input("\nYou: ")
+    mermaid_markdown = graph.get_graph().draw_mermaid()
+    with open("graphs/rag_graph3.mmd", "w") as f:
+        f.write(mermaid_markdown)
+    # Test in terminals
+    # config = {"configurable": {"thread_id": thread_id}}
+    # while True:
+    #     user_input = input("\nYou: ")
         
-        if user_input.lower().strip() == "exit":
-            print("Exiting conversation. Goodbye!")
-            break
+    #     if user_input.lower().strip() == "exit":
+    #         print("Exiting conversation. Goodbye!")
+    #         break
         
-        # Process the user input through the graph
-        for step in graph.stream(
-            {"messages": [{"role": "user", "content": user_input}]},
-            stream_mode=["updates", "messages"],
-            config=config
-        ):
-            print("\nAssistant:", end=" ")
-            step["messages"][-1].pretty_print()
+    #     # Process the user input through the graph
+    #     for step in graph.stream(
+    #         {"messages": [{"role": "user", "content": user_input}]},
+    #         stream_mode=["updates", "messages"],
+    #         config=config
+    #     ):
+    #         print("\nAssistant:", end=" ")
+    #         step["messages"][-1].pretty_print()
 
 
     # Pipeline Graph
-    # mermaid_markdown = graph.get_graph().draw_mermaid()
-    # with open("graphs/rag_graph2.mmd", "w") as f:
-    #     f.write(mermaid_markdown)
+    
         
 
     # for step in graph.stream(

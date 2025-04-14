@@ -11,7 +11,7 @@ load_dotenv()
 os.environ["LANGSMITH_TRACING"] = "true"
 
 
-def process_and_save_data(csv_path = "pbtech_computers_laptops_2025-04-11.csv", embeddings_dir = "embeddings"):
+def process_and_save_data(csv_path = "pbtech_computers_laptops_2025-04-14.csv", embeddings_dir = "embeddings"):
     
     os.makedirs(embeddings_dir, exist_ok=True)
     
@@ -38,9 +38,9 @@ def process_and_save_data(csv_path = "pbtech_computers_laptops_2025-04-11.csv", 
     for i, product in enumerate(data): 
         # Add metadata to base product
         use_case = categorize_by_use_case(product)
-        price_category = categorize_price(product)
+        #price_category = categorize_price(product)
         product.metadata["use_case"] = use_case
-        product.metadata["price"] = price_category
+        #product.metadata["price"] = price_category
         product.metadata["product_id"] = i
         
         # Keep base product info
