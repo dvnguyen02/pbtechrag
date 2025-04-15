@@ -49,7 +49,7 @@ def query():
                 tool_content = latest_message.content
                 responses.append({"type": "tool", "name": tool_name, "content": tool_content})
         
-        # Return all responses to show the tool calling sequence
+        # Return all responses including AI messages and System Messages/Tool Messages
         if responses:
             return jsonify({"responses": responses, "response": responses[-1]})
         else:

@@ -7,8 +7,13 @@ from langchain_openai import OpenAIEmbeddings
 from dotenv import load_dotenv
 import pickle
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+import pandas as pd
 load_dotenv()
 os.environ["LANGSMITH_TRACING"] = "true"
+
+def load_product_data(filepath="data/pbtech_computers_laptops_2025-04-14.csv"): 
+    df = pd.read_csv(filepath)
+    return df
 
 
 def process_and_save_data(csv_path = "pbtech_computers_laptops_2025-04-14.csv", embeddings_dir = "embeddings"):
@@ -28,13 +33,7 @@ def process_and_save_data(csv_path = "pbtech_computers_laptops_2025-04-14.csv", 
     data = loader.load()
     processed_documents = []
 
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=500,
-        chunk_overlap=50,
-    )
     # add metadata to each product
-
-
     for i, product in enumerate(data): 
         # Add metadata to base product
         use_case = categorize_by_use_case(product)
@@ -73,35 +72,35 @@ def categorize_by_use_case(product):
     else:
         return "General Purpose"
 
-def categorize_price(product): 
-    """Determine price-range category for metadata"""
-    try:
-        page_content = product.page_content
-        # Extract price from the content, accounting for different formats
-        if "Price : " in page_content:
-            price_str = page_content.split("Price : ")[1]
-        elif "Price:" in page_content:
-            price_str = page_content.split("Price:")[1]
-        elif "Price" in page_content:
-            price_str = page_content.split("Price")[1]
-        else:
-            return "unknown"
+# def categorize_price(product): 
+#     """Determine price-range category for metadata"""
+#     try:
+#         page_content = product.page_content
+#         # Extract price from the content, accounting for different formats
+#         if "Price : " in page_content:
+#             price_str = page_content.split("Price : ")[1]
+#         elif "Price:" in page_content:
+#             price_str = page_content.split("Price:")[1]
+#         elif "Price" in page_content:
+#             price_str = page_content.split("Price")[1]
+#         else:
+#             return "unknown"
         
-        # Extract numeric value (remove $ and other non-numeric characters)
+#         # Extract numeric value (remove $ and other non-numeric characters)
         
-        # Convert to float for comparison
-        price = float(price)
+#         # Convert to float for comparison
+#         price = float(price)
         
-        if price < 600: 
-            return "budget"
-        elif price < 1000: 
-            return "mid-range"
-        elif price < 1500: 
-            return "premium"
-        else: 
-            return "highend"
-    except (ValueError, IndexError):
-        return "unknown"
+#         if price < 600: 
+#             return "budget"
+#         elif price < 1000: 
+#             return "mid-range"
+#         elif price < 1500: 
+#             return "premium"
+#         else: 
+#             return "highend"
+#     except (ValueError, IndexError):
+#         return "unknown"
 
 if __name__ == "__main__":
     process_and_save_data()

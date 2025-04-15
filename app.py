@@ -14,12 +14,14 @@ from langchain_core.tools import tool
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, FunctionMessage
 from langgraph.prebuilt import tools_condition
 import pandas as pd
+from data_loader import load_product_data
 # environment setup
 load_dotenv()
+df = load_product_data()
 os.environ["LANGSMITH_TRACING"] = "true"
 
 # init components
-llm = ChatOpenAI(model = "gpt-4o-mini")
+llm = ChatOpenAI(model = "gpt-4.1")
 # prompt = hub.pull("rlm/rag-prompt") Not needed
  
 
@@ -52,7 +54,6 @@ except FileNotFoundError:
 
 
 # retrieve function
-from langchain_core.tools import tool
 @tool("retrieve",response_format="content_and_artifact")
 def retrieve(query:str):
     """Retrieve a product related to a query."""
@@ -132,84 +133,46 @@ def compare_products(product1: str, product2: str,query: str):
         return f"Cound not find detailed specificaiton about one or another."
 
 @tool("get_products_total", response_format="content_and_artifact")
-def get_products_total(query: str): 
+def get_products_total(): 
     """Get total number of products in the database"""
     try: 
-        total_products = len(vector_store.index_to_docstore_id)
+        total_products = len(df)
         response = f"There are {total_products} laptops in stock."
         return response, []
     except Exception as e:
         return f"Error retrieving total amount of laptops", []
     
 @tool("get_newest_product", response_format="content_and_artifact")
-def get_newest_product(query: str):
+def get_newest_product():
     """Get the newest product in the database"""
     try: 
-        max_index = max(vector_store.index_to_docstore_id.keys())
-        doc_id = vector_store.index_to_docstore_id[max_index]
-        latest_product = vector_store.docstore.search(doc_id)
-        if latest_product: 
-            response = f"The newest product in our database is: {latest_product.metadata.get('Product Name', 'Unknown')}\n\n"
-            response += f"Details:{latest_product.page_content}"
-            return response, [latest_product]
+        latest_index = len(df)-1 # The last product in the database
+        product_row = df.loc[latest_index]
+        product_name = product_row.get('Product Name', 'Unknown Product')
+        product_price = product_row.get('Price', 'Unknown Price')
+        response = f"The newest product we have is {product_name} with the price of {product_price}"
+        return response, [product_row]
     except Exception as e: 
         return f"Could not retrieve the product", []
     
-# --------------------------Probably not needed-----------------------------
-# @tool("explain_specs", response_format="content_and_artifact")
-# def explain_specs(spec_query: str):
-#     """
-#     Explain technical specifications in simple terms refer to the product that a customer asks.
-    
-#     """
-#     explanation = { 
-#         "cpu": "The CPU is the brain of the computer. Higher numbers generally mean better performance",
-#         "ram": "RAM is computer's short term memory, 8GB is good, 16GB is recommended to most users, and 32GB is for demanding tasks like gaming or video editing",
-#         "ssd": "SSDs store your files and program. They're are faster than normal HHD",
-#         "hhd": "HHDS also store your files and program but it is slower than SSDs.",
-#         "gpu": "The GPU handles graphic processing. Integrated graphics are OK for basic tasks like office tasks, but for tasks like training AI Models or gaming may require dedicated GPUS.",
-#         "display": "Display quality affects what you see. FHD is standard resolution, IPS panels generally have better colors than the standard displays."
-#     }
-#     # check common terms that might be in the query
-#     spec_query_lower = spec_query.lower()
-    
-#     if "processor" in spec_query_lower or "cpu" in spec_query_lower: 
-#         spec_type = "processor"
-#         return explanation["cpu"], []
-#     elif "ram" in spec_query_lower or "memory" in spec_query_lower: 
-#         spec_type = "ram"
-#         return explanation["ram"], []
-#     elif "ssd" in spec_query_lower or "solid state drive" in spec_query_lower:
-#         spec_type = "ssd"
-#         return explanation["ssd"], []
-#     elif "hhd" in spec_query_lower or "hard drive": 
-#         spec_type = "hhd"
-#         return explanation["hhd"], []
-#     elif "gpu" in spec_query_lower or "graphic card" in spec_query_lower: 
-#         spec_type = "gpu"
-#         return explanation["gpu"], []
-#     elif "display" in spec_query_lower:
-#         spec_type = "display"
-#         return explanation["display"], []
-    
-#     value_terms = {
-#         "cpu": ["ryzen", "intel", "core i7", "core i5", "core i3", "amd"],
-#         "ram": ["8gb", "16gb", "32gb", "ddr4", "ddr5"],
-#         "ssd": ["256gb", "512gb", "1tb", "nvme"],
-#         "hdd": ["1tb", "2tb"],
-#         "gpu": ["rtx", "gtx", "radeon", "nvidia", "integrated"],
-#         "display": ["fhd", "uhd", "4k", "ips", "oled"]
-#     }
-#     specific_value = None
-#     if spec_type in value_terms: 
-#         for term in value_terms[spec_type]: 
-#             if term in spec_query_lower: 
-#                 specific_value = term
+@tool("filter_by_price_range", response_format="content_and_artifact")
+def filter_by_price_range(query: str, min_price: float, max_price: float): 
+    """Filter products by price range"""
+    filtered_df = df[(df['Price'] >= min_price) & (df['Price'] <= max_price)]
+    # Get top 5 products
+    top_results = filtered_df.head(5)
+    product_list = []
+    for _, row in top_results.iterrows(): 
+        product = {
+            'Product Name': row.get('Product Name', 'Unknown Product'),
+            'Price': row.get('Price', 'NA Price'),
+            'Detailed Specs': row.get('Detailed Specs', 'NA Specs')
+        }
+        product_list.append(product)
+    response = f"Found {len(filtered_df)} products between ${min_price} and ${max_price}. Here are the top matches:\n\n"
+    response += "\n\n".join([f"- {p['Product Name']} ({p['Price']})" for p in product_list])
 
-#     if specific_value: 
-#         search_term = f"{specific_value} {search_term}"
-#         relevant_products = vector_store.similarity_search(search_term, k=2)
-#         return relevant_products, []
+    return response, product_list
 
 @tool("get_detailed_specs", response_format="content_and_artifact")
 def get_detailed_specs(product_name: str):
@@ -245,18 +208,42 @@ def get_detailed_specs(product_name: str):
         error_msg = f"Error retrieving specifications: {str(e)}"
         return error_msg, []
 
+@tool("get_most_expensive_product", response_format="content_and_artifact")
+def get_most_expensive_product(query: str):
+    """Get most expensive product"""
+    max_price_idx = df['Price'].idxmax()
+    product_row = df.loc[max_price_idx]
+    product_name = product_row.get('Product Name', 'Unknown Product')
+    price = product_row['Price']
+    response = f"The most expensive product is {product_name}, and it costs {price}"
+    return response, [product_row.to_dict()]
+
 # Genearte AI Message that may include a tool-call to be sent
 
 def query_or_respond(state: MessagesState):
     """Generate tool call for retrieval or respond."""
-    llm_with_tools = llm.bind_tools([get_newest_product,retrieve, compare_products, recommend_products, get_detailed_specs, get_products_total])
+    llm_with_tools = llm.bind_tools([get_most_expensive_product, 
+                                     get_newest_product,
+                                     retrieve, 
+                                     compare_products, 
+                                     recommend_products, 
+                                     get_detailed_specs, 
+                                     get_products_total,
+                                     filter_by_price_range])
     response = llm_with_tools.invoke(state["messages"])
     # MessagesState appends messages to state instead of overwriting
     return {"messages": [response]}
 
 # Execute the tools
 from langgraph.prebuilt import ToolNode
-tools = ToolNode([get_newest_product,compare_products, retrieve, recommend_products, get_detailed_specs, get_products_total])
+tools = ToolNode([get_most_expensive_product, 
+                  get_newest_product,
+                  compare_products, 
+                  retrieve, 
+                  recommend_products, 
+                  get_detailed_specs, 
+                  get_products_total,
+                  filter_by_price_range])
 
 
 
@@ -341,25 +328,25 @@ if __name__ == "__main__":
     import uuid
     thread_id = str(uuid.uuid4())
     mermaid_markdown = graph.get_graph().draw_mermaid()
-    with open("graphs/rag_graph3.mmd", "w") as f:
-        f.write(mermaid_markdown)
+    # with open("graphs/rag_graph3.mmd", "w") as f:
+    #     f.write(mermaid_markdown)
     # Test in terminals
-    # config = {"configurable": {"thread_id": thread_id}}
-    # while True:
-    #     user_input = input("\nYou: ")
+    config = {"configurable": {"thread_id": thread_id}}
+    while True:
+        user_input = input("\nYou: ")
         
-    #     if user_input.lower().strip() == "exit":
-    #         print("Exiting conversation. Goodbye!")
-    #         break
+        if user_input.lower().strip() == "exit":
+            print("Exiting conversation. Goodbye!")
+            break
         
-    #     # Process the user input through the graph
-    #     for step in graph.stream(
-    #         {"messages": [{"role": "user", "content": user_input}]},
-    #         stream_mode=["updates", "messages"],
-    #         config=config
-    #     ):
-    #         print("\nAssistant:", end=" ")
-    #         step["messages"][-1].pretty_print()
+        # Process the user input through the graph
+        for step in graph.stream(
+            {"messages": [{"role": "user", "content": user_input}]},
+            stream_mode="values",
+            config=config
+        ):
+            print("\nAssistant:", end=" ")
+            step["messages"][-1].pretty_print()
 
 
     # Pipeline Graph
