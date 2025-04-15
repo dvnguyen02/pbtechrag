@@ -56,7 +56,21 @@ except FileNotFoundError:
 # retrieve function
 @tool("retrieve",response_format="content_and_artifact")
 def retrieve(query:str):
-    """Retrieve a product related to a query."""
+    """
+    Retrieve products related to a query using vector similarity search.
+    
+    Args:
+        query (str): The search query to find relevant products.
+        
+    Returns:
+        tuple: A tuple containing:
+            - str: Formatted product information with metadata and content
+            - list: List of Document objects containing the retrieved products
+            
+    Example:
+        >>> retrieve("gaming laptop")
+        ("Source: {...}\nContent: {...}", [Document1, Document2])
+    """
     retrieved_products = vector_store.similarity_search(query, k=2)
     serialized = "\n\n".join(
         (f"Source: {product.metadata}\n" f"Content: {product.page_content}")
@@ -79,45 +93,76 @@ def retrieve(query:str):
 #     )
 #         return serialized_k_products, retrieve_k_products
 
-# Compare product tool
-
-@tool("recommend_products", response_format="content_and_artifact")
-def recommend_products(query:str, budget: float, use_case: str): 
-    """ Recommend a (list) product to a customer based on a query"""
-    query = f"Recommend me a laptop for {use_case} under {budget}"
-    retrieved_products = vector_store.similarity_search(query, k=2)
-    budget_filtered = []
+# --------------------Need to work more on -------------------------
+# @tool("recommend_products", response_format="content_and_artifact")
+# def recommend_products(query:str, budget: float, use_case: str): 
+#     """
+#     Recommend products to a customer based on query, budget constraints and intended use case.
     
-    for product in retrieved_products: 
-        try:
-            if 'Price' in product.metadata and product.metadata['Price']:
-                price = float(product.metadata['Price'])
+#     Args:
+#         query (str): The search query describing desired product features
+#         budget (float): Maximum price the customer is willing to pay
+#         use_case (str): Description of how the customer intends to use the product
+        
+#     Returns:
+#         tuple: A tuple containing:
+#             - str: Formatted product recommendations with metadata and content
+#             - list: List of Document objects containing the recommended products that fit within budget
+            
+#     Example:
+#         >>> recommend_products("laptop", 1500.0, "video editing")
+#         ("Source: {...}\nContent: {...}", [Document1, Document2])
+#     """
+#     query = f"Recommend me a laptop for {use_case} under {budget}"
+#     retrieved_products = vector_store.similarity_search(query, k=2)
+#     budget_filtered = []
+    
+#     for product in retrieved_products: 
+#         try:
+#             if 'Price' in product.metadata and product.metadata['Price']:
+#                 price = float(product.metadata['Price'])
 
                 
-                if price <= budget:
-                    budget_filtered.append(product)
-        except (ValueError, IndexError) as e:
-            # Skip products with parsing issues
-            continue
+#                 if price <= budget:
+#                     budget_filtered.append(product)
+#         except (ValueError, IndexError) as e:
+#             # Skip products with parsing issues
+#             continue
     
-    if budget_filtered: 
-        serialized = "\n\n".join(
-            f"Source: {product.metadata}\n" f"Content: {product.page_content}"
-            for product in budget_filtered
-        )
-        return serialized, budget_filtered
-    else:
-        # If no products match budget, return original results with warning
-        serialized = "No products found within the budget. Here are some alternatives that are close:\n\n" + "\n\n".join(
-            f"Source: {product.metadata}\n" 
-            f"Content: {product.page_content}"
-            for product in retrieved_products
-        )
-        return serialized, retrieved_products
+#     if budget_filtered: 
+#         serialized = "\n\n".join(
+#             f"Source: {product.metadata}\n" f"Content: {product.page_content}"
+#             for product in budget_filtered
+#         )
+#         return serialized, budget_filtered
+#     else:
+#         # If no products match budget, return original results with warning
+#         serialized = "No products found within the budget. Here are some alternatives that are close:\n\n" + "\n\n".join(
+#             f"Source: {product.metadata}\n" 
+#             f"Content: {product.page_content}"
+#             for product in retrieved_products
+#         )
+#         return serialized, retrieved_products
 
 @tool("compare_products", response_format="content_and_artifact")
 def compare_products(product1: str, product2: str,query: str): 
-    """Compare products related to a query"""
+    """
+    Compare two products based on their specifications and a specific comparison query.
+    
+    Args:
+        product1 (str): Name or description of the first product to compare
+        product2 (str): Name or description of the second product to compare
+        query (str): The specific aspect or criteria to focus on for comparison
+        
+    Returns:
+        tuple: A tuple containing:
+            - dict: Dictionary with formatted comparison information between the two products
+            - list: List containing Document objects for both products
+            
+    Example:
+        >>> compare_products("MacBook Pro", "Dell XPS 15", "performance")
+        ({"Comparison between MacBook Pro and Dell XPS 15 based on performance: ...": ...}, [Document1, Document2])
+    """
     product1_specs = vector_store.similarity_search(product1, k=1)
     product2_specs = vector_store.similarity_search(product2, k=1)
     if product1_specs and product2_specs: 
@@ -134,7 +179,18 @@ def compare_products(product1: str, product2: str,query: str):
 
 @tool("get_products_total", response_format="content_and_artifact")
 def get_products_total(): 
-    """Get total number of products in the database"""
+    """
+    Get the total number of laptop products available in the database.
+    
+    Returns:
+        tuple: A tuple containing:
+            - str: A response string indicating the total number of laptops in stock
+            - list: An empty list (no additional data needed for this function)
+            
+    Example:
+        >>> get_products_total()
+        ("There are 152 laptops in stock.", [])
+    """
     try: 
         total_products = len(df)
         response = f"There are {total_products} laptops in stock."
@@ -144,7 +200,18 @@ def get_products_total():
     
 @tool("get_newest_product", response_format="content_and_artifact")
 def get_newest_product():
-    """Get the newest product in the database"""
+    """
+    Retrieve information about the most recently added product in the database.
+    
+    Returns: 
+        tuple: A tuple containing: 
+            - str: A response with the newest product's name and price
+            - list: A list containing the product data as a pandas Series
+            
+    Example:
+        >>> get_newest_product()
+        ("The newest product we have is ASUS ROG Zephyrus with the price of $2499.99", [Series(...)])
+    """
     try: 
         latest_index = len(df)-1 # The last product in the database
         product_row = df.loc[latest_index]
@@ -156,8 +223,23 @@ def get_newest_product():
         return f"Could not retrieve the product", []
     
 @tool("filter_by_price_range", response_format="content_and_artifact")
-def filter_by_price_range(query: str, min_price: float, max_price: float): 
-    """Filter products by price range"""
+def filter_by_price_range(min_price: float, max_price: float): 
+    """
+    Filter products by a specified price range and return top matches.
+    
+    Args:
+        min_price (float): The minimum price threshold (inclusive)
+        max_price (float): The maximum price threshold (inclusive)
+        
+    Returns: 
+        tuple: A tuple containing: 
+            - str: A formatted response with the count of matching products and top results
+            - list: A list of dictionaries containing product details for the top matches
+            
+    Example:
+        >>> filter_by_price_range(800.0, 1200.0)
+        ("Found 15 products between $800.0 and $1200.0. Here are the top matches:\n\n- HP Pavilion (999.99)\n- Lenovo IdeaPad (849.99)\n...", [{...}, {...}, ...])
+    """
     filtered_df = df[(df['Price'] >= min_price) & (df['Price'] <= max_price)]
     # Get top 5 products
     top_results = filtered_df.head(5)
@@ -175,9 +257,23 @@ def filter_by_price_range(query: str, min_price: float, max_price: float):
     return response, product_list
 
 @tool("get_detailed_specs", response_format="content_and_artifact")
+### Need more work on this 
 def get_detailed_specs(product_name: str):
-    """Get detailed features for a specific product."""
-    # Create a more targeted query to find detailed specifications
+    """
+    Get detailed technical specifications for a specific product.
+    
+    Args:
+        product_name (str): The name of the product to retrieve specifications for
+        
+    Returns:
+        tuple: A tuple containing:
+            - str: Formatted string with detailed specifications from retrieved documents
+            - list: List of Document objects containing the retrieved specification data
+            
+    Example:
+        >>> get_detailed_specs("Dell XPS 13")
+        ("PRODUCT INFO: Dell XPS 13\nSOURCE: Product Database\nSPECIFICATIONS:\nProcessor: Intel Core i7-1165G7\nRAM: 16GB LPDDR4x\n...", [Document1, Document2])
+    """    # Create a more targeted query to find detailed specifications
     if not product_name or product_name.strip() == "":
         return "Please provide a valid product name.", []
     
@@ -210,7 +306,21 @@ def get_detailed_specs(product_name: str):
 
 @tool("get_most_expensive_product", response_format="content_and_artifact")
 def get_most_expensive_product(query: str):
-    """Get most expensive product"""
+    """
+    Retrieve information about the most expensive product in the database.
+    
+    Args:
+        query (str): Optional query parameter to provide context for the request
+        
+    Returns: 
+        tuple: A tuple containing: 
+            - str: A response string identifying the most expensive product and its price
+            - list: A list containing a dictionary with the product's data
+            
+    Example:
+        >>> get_most_expensive_product("gaming laptop")
+        ("The most expensive product is Alienware m18 R2, and it costs $4999.99", [{"Product Name": "Alienware m18 R2", "Price": 4999.99, ...}])
+    """
     max_price_idx = df['Price'].idxmax()
     product_row = df.loc[max_price_idx]
     product_name = product_row.get('Product Name', 'Unknown Product')
@@ -226,7 +336,6 @@ def query_or_respond(state: MessagesState):
                                      get_newest_product,
                                      retrieve, 
                                      compare_products, 
-                                     recommend_products, 
                                      get_detailed_specs, 
                                      get_products_total,
                                      filter_by_price_range])
@@ -240,7 +349,6 @@ tools = ToolNode([get_most_expensive_product,
                   get_newest_product,
                   compare_products, 
                   retrieve, 
-                  recommend_products, 
                   get_detailed_specs, 
                   get_products_total,
                   filter_by_price_range])
