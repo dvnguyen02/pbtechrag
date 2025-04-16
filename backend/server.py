@@ -1,10 +1,10 @@
 from flask import Flask, render_template, request, jsonify, session, send_from_directory
 import uuid
-from backend.core.rag import build_langgraph
+from core.rag import build_langgraph
 from dotenv import load_dotenv
 import os
 from pathlib import Path
-from backend.core.token_counter import TokenCounter
+from core.token_counter import TokenCounter
 
 load_dotenv()
 app = Flask(__name__, static_folder='./build/static', template_folder='./build')
