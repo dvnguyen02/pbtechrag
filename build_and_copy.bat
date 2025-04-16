@@ -1,3 +1,3 @@
 cd client
 npm run build
-xcopy build\* ..\backend\static\ /E /I /Y
+xcopy build\* ..\backend\build\ /E /I /Y
