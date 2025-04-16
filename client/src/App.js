@@ -9,6 +9,7 @@ import TechStack from './components/TechStack';
 import ContactBar from './components/ContactBar';
 import RagBanner from './components/RagBanner';
 import RagDescription from './components/RagDescription';
+import RagDemoSection from './components/RagDemoSection'; // Add this import
 
 function App() {
   const [messages, setMessages] = useState([]);
@@ -19,16 +20,14 @@ function App() {
   const chatBoxRef = useRef(null);
   
   const exampleQueries = [
-    "Show me the best laptops under $1500",
     "Can I run Black Myth Wukong on this laptop",
-    "What's the newest laptop in stock?",
     "Show me laptops for graphic design",
     "Compare MacBook Pro and Dell XPS 15",
     "What's the difference between ASUS ROG and Alienware gaming laptops?",
     "What are the specifications of the Dell XPS 13?",
-    "What laptops can I buy for under $1500?", 
+    "What laptops can I buy for over $500 and under $1500?", 
     "What's the most expensive laptop you have?",
-    "Check game compatibility for this laptop with Fortnite"
+    "Check game compatibility for this laptop with Black Myth Wukong"
   ];
 
   useEffect(() => {
@@ -166,8 +165,8 @@ function App() {
         <RagBanner />
         <RagDescription />
         
-        {/* Existing components */}
-        <DatasetPreview />
+        {/* Replace DatasetPreview with RagDemoSection */}
+        <RagDemoSection />
         
         <div className="main-content">
           <ChatBox 

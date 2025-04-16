@@ -1,5 +1,5 @@
 import React from 'react';
-import { Send, HelpCircle, MessageSquare, Zap, AlertCircle } from 'lucide-react';
+import { Send, HelpCircle, MessageSquare, Cpu, AlertCircle } from 'lucide-react'; 
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -13,6 +13,12 @@ const ChatBox = ({
   sendMessage, 
   handleKeyPress 
 }) => {
+  // Add this wrapper function to ensure proper parameter handling
+  const handleSendClick = (e) => {
+    e.preventDefault();
+    sendMessage(input); // Pass the input value explicitly
+  };
+
   return (
     <div className="chat-container">
       <div className="header">
@@ -44,7 +50,7 @@ const ChatBox = ({
               {message.role === 'user' ? 
                 <MessageSquare size={20} /> : 
                 message.role === 'assistant' ? 
-                  <Zap size={20} /> : 
+                  <Cpu size={20} /> : // Changed Zap to Cpu
                   <HelpCircle size={20} />
               }
             </div>
@@ -70,7 +76,7 @@ const ChatBox = ({
         {isLoading && (
           <div className="message assistant-message">
             <div className="message-avatar">
-              <Zap size={20} />
+              <Cpu size={20} /> {/* Changed Zap to Cpu */}
             </div>
             <div className="message-content typing-indicator">
               <span></span><span></span><span></span>
@@ -90,7 +96,7 @@ const ChatBox = ({
           disabled={tokenLimitExceeded}
         />
         <button 
-          onClick={sendMessage} 
+          onClick={handleSendClick} 
           className="send-button"
           disabled={isLoading || input.trim() === '' || tokenLimitExceeded}
         >

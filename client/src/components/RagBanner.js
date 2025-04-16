@@ -2,7 +2,7 @@ import React from 'react';
 
 const RagBanner = ({ 
   title = "PBTech RAG (Unofficial)", 
-  subtitle = "A product recommendation system powered by Retrieval Augmented Generation" 
+  subtitle = "Automatically answering customer queries with Retrieval-Augmented Generation" 
 }) => {
   return (
     <div className="rag-banner">

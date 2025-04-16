@@ -506,29 +506,29 @@ def build_langgraph():
 
 
 # For testing purpose
-# if __name__ == "__main__": 
+if __name__ == "__main__": 
         
     
-#     graph = build_langgraph()
-#     import uuid
-#     thread_id = str(uuid.uuid4())
-#     mermaid_markdown = graph.get_graph().draw_mermaid()
-#     # with open("graphs/rag_graph3.mmd", "w") as f:
-#     #     f.write(mermaid_markdown)
-#     # Test in terminals
-#     config = {"configurable": {"thread_id": thread_id}}
-#     while True:
-#         user_input = input("\nYou: ")
+    graph = build_langgraph()
+    import uuid
+    thread_id = str(uuid.uuid4())
+    mermaid_markdown = graph.get_graph().draw_mermaid()
+    # with open("graphs/rag_graph3.mmd", "w") as f:
+    #     f.write(mermaid_markdown)
+    # Test in terminals
+    config = {"configurable": {"thread_id": thread_id}}
+    while True:
+        user_input = input("\nYou: ")
         
-#         if user_input.lower().strip() == "exit":
-#             print("Exiting conversation. Goodbye!")
-#             break
+        if user_input.lower().strip() == "exit":
+            print("Exiting conversation. Goodbye!")
+            break
         
-#         # Process the user input through the graph
-#         for step in graph.stream(
-#             {"messages": [{"role": "user", "content": user_input}]},
-#             stream_mode="values",
-#             config=config
-#         ):
-#             print("\nAssistant:", end=" ")
-#             step["messages"][-1].pretty_print()
+        # Process the user input through the graph
+        for step in graph.stream(
+            {"messages": [{"role": "user", "content": user_input}]},
+            stream_mode="values",
+            config=config
+        ):
+            print("\nAssistant:", end=" ")
+            step["messages"][-1].pretty_print()

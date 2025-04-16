@@ -1,0 +1,113 @@
+.rag-description {
+  opacity: 0;
+  transition: opacity 0.8s ease-in-out;
+}
+
+.rag-description.visible {
+  opacity: 1;
+}
+
+.title-animation {
+  transform: translateY(-20px);
+  opacity: 0;
+  animation: slideDown 0.8s ease forwards;
+  animation-delay: 0.3s;
+}
+
+.slide-in-animation {
+  transform: translateX(-20px);
+  opacity: 0;
+  animation: slideIn 0.8s ease forwards;
+  animation-delay: 0.5s;
+}
+
+.feature-item {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.5s ease;
+}
+
+.feature-item.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.fade-in-animation {
+  opacity: 0;
+  animation: fadeIn 1s ease forwards;
+  animation-delay: 1.2s;
+}
+
+.example-container {
+  opacity: 0;
+  transition: opacity 1.2s ease, transform 1s ease;
+  transform: translateY(30px);
+}
+
+.example-container.skills-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.example-list li {
+  opacity: 0;
+  animation: fadeIn 0.5s ease forwards;
+}
+
+.example-list li:nth-child(1) { animation-delay: 1.6s; }
+.example-list li:nth-child(2) { animation-delay: 1.8s; }
+.example-list li:nth-child(3) { animation-delay: 2.0s; }
+.example-list li:nth-child(4) { animation-delay: 2.2s; }
+.example-list li:nth-child(5) { animation-delay: 2.4s; }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Add hover effects for interactive elements */
+.feature-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.example-list li:hover strong {
+    display: inline-block;
+    transform: scale(1.05) translateY(-2px);
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+    background: linear-gradient(120deg, transparent, rgba(59, 10, 10, 0.1), transparent);
+    background-size: 200% 100%;
+    background-position: 100% 0;
+    animation: shimmer 1s infinite;
+    padding: 0 4px;
+    border-radius: 3px;
+    transition: all 0.3s ease;
+  }
+  
+  @keyframes shimmer {
+    0% { background-position: 100% 0; }
+    100% { background-position: -100% 0; }
+  }
