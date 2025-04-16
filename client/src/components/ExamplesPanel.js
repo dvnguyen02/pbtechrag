@@ -3,7 +3,7 @@ import React from 'react';
 const ExamplesPanel = ({ exampleQueries, tokenLimitExceeded, handleExampleClick }) => {
   return (
     <div className="examples-container">
-      <h3>Common Questions</h3>
+      <h3>Example Query</h3>
       <div className="examples-grid">
         {exampleQueries.map((query, index) => (
           <div 

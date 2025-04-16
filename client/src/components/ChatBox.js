@@ -28,7 +28,16 @@ const ChatBox = ({
         </div>
       )}
       
-      <div className="chat-box" ref={chatBoxRef}>
+      <div 
+        className="chat-box custom-scrollbar" 
+        ref={chatBoxRef}
+        style={{
+          height: "60vh",
+          maxHeight: "calc(100vh - 200px)",
+          overflowY: "auto",
+          padding: "10px",
+        }}
+      >
         {messages.map((message, index) => (
           <div key={index} className={`message ${message.role}-message`}>
             <div className="message-avatar">
@@ -76,7 +85,7 @@ const ChatBox = ({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={handleKeyPress}
-          placeholder="Ask any question..."
+          placeholder="Ask any relating to products on PBTech.."
           className="message-input"
           disabled={tokenLimitExceeded}
         />

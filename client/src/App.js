@@ -5,6 +5,10 @@ import DatasetPreview from './components/DatasetPreview';
 import ChatBox from './components/ChatBox';
 import ExamplesPanel from './components/ExamplesPanel';
 import TechStack from './components/TechStack';
+// Import the new components
+import ContactBar from './components/ContactBar';
+import RagBanner from './components/RagBanner';
+import RagDescription from './components/RagDescription';
 
 function App() {
   const [messages, setMessages] = useState([]);
@@ -15,12 +19,16 @@ function App() {
   const chatBoxRef = useRef(null);
   
   const exampleQueries = [
-    "Recommend me a laptop for gaming under $1500",
-    "Compare Acer Chromebook C734 11.6'' HD and Lenovo ThinkPad T14s G5 14",
-    "What does CPU mean?",
-    "What is the price of Acer Swift?",
-    "What's a good laptop for uni?",
-    "In a range of 2000 to 2500, suggest me some laptops"
+    "Show me the best laptops under $1500",
+    "Can I run Black Myth Wukong on this laptop",
+    "What's the newest laptop in stock?",
+    "Show me laptops for graphic design",
+    "Compare MacBook Pro and Dell XPS 15",
+    "What's the difference between ASUS ROG and Alienware gaming laptops?",
+    "What are the specifications of the Dell XPS 13?",
+    "What laptops can I buy for under $1500?", 
+    "What's the most expensive laptop you have?",
+    "Check game compatibility for this laptop with Fortnite"
   ];
 
   useEffect(() => {
@@ -149,36 +157,46 @@ function App() {
 
 
   return (
-    <div className="app-container">
-      <DatasetPreview />
+    <>
+      {/* Contact bar at the very top */}
+      <ContactBar />
       
-      <div className="main-content">
-        <ChatBox 
-          messages={messages}
-          input={input}
-          setInput={setInput}
-          isLoading={isLoading}
-          tokenLimitExceeded={tokenLimitExceeded}
-          chatBoxRef={chatBoxRef}
-          sendMessage={sendMessage}
-          handleKeyPress={handleKeyPress}
-        />
+      <div className="app-container">
+        {/* Add RAG introduction components */}
+        <RagBanner />
+        <RagDescription />
         
-        <div className="side-content">
-          <ExamplesPanel 
-            exampleQueries={exampleQueries}
+        {/* Existing components */}
+        <DatasetPreview />
+        
+        <div className="main-content">
+          <ChatBox 
+            messages={messages}
+            input={input}
+            setInput={setInput}
+            isLoading={isLoading}
             tokenLimitExceeded={tokenLimitExceeded}
-            handleExampleClick={handleExampleClick}
+            chatBoxRef={chatBoxRef}
+            sendMessage={sendMessage}
+            handleKeyPress={handleKeyPress}
           />
           
-          {/* Token Usage Display */}
-          {tokenUsage && <TokenUsageDisplay tokenUsage={tokenUsage} />}
+          <div className="side-content">
+            <ExamplesPanel 
+              exampleQueries={exampleQueries}
+              tokenLimitExceeded={tokenLimitExceeded}
+              handleExampleClick={handleExampleClick}
+            />
+            
+            {/* Token Usage Display */}
+            {tokenUsage && <TokenUsageDisplay tokenUsage={tokenUsage} />}
+          </div>
         </div>
+        
+        {/* Tech Stack Footer */}
+        <TechStack />
       </div>
-      
-      {/* Tech Stack Footer */}
-      <TechStack />
-    </div>
+    </>
   );
 }
 

@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify, session, send_from_directory
 import uuid
-from backend.core.RAG import build_langgraph
+from backend.core.rag import build_langgraph
 from dotenv import load_dotenv
 import os
 from pathlib import Path
