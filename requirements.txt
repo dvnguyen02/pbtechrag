@@ -8,3 +8,4 @@ langgraph
 faiss-cpu
 tiktoken
 pandas
+gunicorn
