@@ -1,13 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
-import { Send, HelpCircle, MessageSquare, Zap, Database, Server, Code, Globe, Cpu, Book } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import TokenUsageDisplay from './components/TokenUsageDisplay';
+import DatasetPreview from './components/DatasetPreview';
+import ChatBox from './components/ChatBox';
+import ExamplesPanel from './components/ExamplesPanel';
+import TechStack from './components/TechStack';
 
 function App() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [tokenUsage, setTokenUsage] = useState(null);
+  const [tokenLimitExceeded, setTokenLimitExceeded] = useState(false);
   const chatBoxRef = useRef(null);
   
   const exampleQueries = [
@@ -24,6 +28,9 @@ function App() {
     setMessages([
       { role: 'assistant', content: 'Welcome to PBTech! How can I help you today?' }
     ]);
+    
+    // Fetch initial token usage
+    fetchTokenUsage();
   }, []);
 
   useEffect(() => {
@@ -33,9 +40,24 @@ function App() {
     }
   }, [messages]);
 
+  const fetchTokenUsage = async () => {
+    try {
+      const response = await fetch('/token-usage');
+      if (response.ok) {
+        const data = await response.json();
+        setTokenUsage(data);
+      }
+    } catch (error) {
+      console.error('Error fetching token usage:', error);
+    }
+  };
+
   const sendMessage = async (messageToSend = null) => {
     const messageText = messageToSend || input;
     if (messageText.trim() === '') return;
+    
+    // Reset token limit exceeded state
+    setTokenLimitExceeded(false);
     
     // Add user message to chat
     setMessages(prev => [...prev, { role: 'user', content: messageText }]);
@@ -57,6 +79,16 @@ function App() {
       
       const data = await response.json();
       console.log("API Response:", data); // Debug logging
+      
+      // Update token usage data if available
+      if (data.token_usage) {
+        setTokenUsage(data.token_usage);
+      }
+      
+      // Check if token limit was exceeded
+      if (data.token_limit_exceeded) {
+        setTokenLimitExceeded(true);
+      }
       
       if (data.responses && Array.isArray(data.responses)) {
         // Add each response to messages sequentially
@@ -118,170 +150,34 @@ function App() {
 
   return (
     <div className="app-container">
-      <div className="tech-stack-preview">
-        <h2>PBTech RAG Dataset Preview</h2>
-        <div className="dataset-preview">
-          <table>
-            <thead>
-              <tr>
-                <th>Product Name</th>
-                <th>Category</th>
-                <th>General Specs</th>
-                <th>Detailed Specs</th>
-                <th>Price</th>
-                <th>Product URL</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>ASUS Vivobook Go E1504FA 15.6" FHD</td>
-                <td>computers/laptops</td>
-                <td>AMD Ryzen 5 7520U - 16GB RAM - 512GB SSD - Win 11 Home - 1yr warranty - AC WiFi 5 + BT4.1 - Webcam - USB-C & HDMI</td>
-                <td>...</td>
-                <td>$1078.75</td>
-                <td>
-                  <a href="https://www.pbtech.co.nz/product/NBKASU1504274/ASUS-Vivobook-Go-E1504FA-156-FHD-AMD-Ryzen-5-7520U" target='_blank' rel="noopener noreferrer">
-                  Product Page
-                  </a>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          <div className="dataset-note">* Sample data from PBTech product catalog</div>
-          <div className="dataset-link">
-            <a href="https://docs.google.com/spreadsheets/d/1SDhHi2_sJkzhY9_LESBFzNB94bT9n0kaIGnEKC7741Y/edit?usp=sharing" target="_blank" rel="noopener noreferrer">
-              View Dataset
-            </a>
-          </div>
-        </div>
-      </div>
+      <DatasetPreview />
       
-      <div className="chat-container">
-        <div className="header">
-          <div className="logo">
-            <h1>PBTech RAG</h1>
-          </div>
-        </div>
+      <div className="main-content">
+        <ChatBox 
+          messages={messages}
+          input={input}
+          setInput={setInput}
+          isLoading={isLoading}
+          tokenLimitExceeded={tokenLimitExceeded}
+          chatBoxRef={chatBoxRef}
+          sendMessage={sendMessage}
+          handleKeyPress={handleKeyPress}
+        />
         
-        <div className="chat-box" ref={chatBoxRef}>
-          {messages.map((message, index) => (
-            <div key={index} className={`message ${message.role}-message`}>
-              <div className="message-avatar">
-                {message.role === 'user' ? 
-                  <MessageSquare size={20} /> : 
-                  message.role === 'assistant' ? 
-                    <Zap size={20} /> : 
-                    <HelpCircle size={20} />
-                }
-              </div>
-              <div className="message-content">
-                {message.role === 'tool' && (
-                  <div className="tool-header">
-                    <span className="tool-name">{message.name || 'Tool'}</span>
-                  </div>
-                )}
-                {message.role === 'tool' ? (
-                  <div className="tool-content">{message.content}</div>
-                ) : (
-                  <ReactMarkdown 
-                    remarkPlugins={[remarkGfm]}
-                    className="markdown-content"
-                  >
-                    {message.content}
-                  </ReactMarkdown>
-                )}
-              </div>
-            </div>
-          ))}
-          {isLoading && (
-            <div className="message assistant-message">
-              <div className="message-avatar">
-                <Zap size={20} />
-              </div>
-              <div className="message-content typing-indicator">
-                <span></span><span></span><span></span>
-              </div>
-            </div>
-          )}
-        </div>
-        
-        <div className="input-container">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Ask any question..."
-            className="message-input"
+        <div className="side-content">
+          <ExamplesPanel 
+            exampleQueries={exampleQueries}
+            tokenLimitExceeded={tokenLimitExceeded}
+            handleExampleClick={handleExampleClick}
           />
-          <button 
-            onClick={sendMessage} 
-            className="send-button"
-            disabled={isLoading || input.trim() === ''}
-          >
-            <Send size={20} />
-          </button>
+          
+          {/* Token Usage Display */}
+          {tokenUsage && <TokenUsageDisplay tokenUsage={tokenUsage} />}
         </div>
       </div>
       
-      <div className="examples-container">
-        <h3>Common Questions</h3>
-        <div className="examples-grid">
-          {exampleQueries.map((query, index) => (
-            <div 
-              key={index} 
-              className="example-card"
-              onClick={() => handleExampleClick(query)}
-            >
-              {query}
-            </div>
-          ))}
-        </div>
-      </div>
-      
-      {/* New Tech Stack Footer */}
-      <div className="tech-stack-footer">
-        <div className="tech-stack-container">
-          <h3>Tech Stack</h3>
-          <div className="tech-stack-grid">
-            <div className="tech-stack-section">
-              <h4>LLM Framework</h4>
-              <ul>
-                <li><span className="tech-icon"><Code size={16} /></span> LangChain</li>
-                <li><span className="tech-icon"><Cpu size={16} /></span> LangGraph</li>
-                <li><span className="tech-icon"><Book size={16} /></span> GPT-4.1 API</li>
-              </ul>
-            </div>
-            <div className="tech-stack-section">
-              <h4>Backend</h4>
-              <ul>
-                <li><span className="tech-icon"><Server size={16} /></span> Flask</li>
-                <li><span className="tech-icon"><Database size={16} /></span> FAISS Vector DB</li>
-                <li><span className="tech-icon"><Code size={16} /></span> OpenAI Embeddings</li>
-              </ul>
-            </div>
-            <div className="tech-stack-section">
-              <h4>Data Processing</h4>
-              <ul>
-                <li><span className="tech-icon"><Database size={16} /></span> Pandas</li>
-                <li><span className="tech-icon"><Code size={16} /></span> CSV Loader</li>
-                <li><span className="tech-icon"><Cpu size={16} /></span> RecursiveCharacterTextSplitter</li>
-              </ul>
-            </div>
-            <div className="tech-stack-section">
-              <h4>Frontend</h4>
-              <ul>
-                <li><span className="tech-icon"><Code size={16} /></span> React.js</li>
-                <li><span className="tech-icon"><Globe size={16} /></span> JavaScript</li>
-                <li><span className="tech-icon"><Code size={16} /></span> Lucide Icons</li>
-              </ul>
-            </div>
-          </div>
-          <div className="copyright">
-            © 2025 PBTech RAG Demo. All rights reserved.
-          </div>
-        </div>
-      </div>
+      {/* Tech Stack Footer */}
+      <TechStack />
     </div>
   );
 }

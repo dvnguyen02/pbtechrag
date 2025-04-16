@@ -1,9 +1,9 @@
 .env
 .csv
-/embeddings
 /__pycache__
-
-
+backend.py
+token_usage.json
+/rag_graphs
 # Dependencies
 node_modules/
 npm-debug.log
@@ -38,3 +38,4 @@ coverage/
 *.swp
 *.swo
 .DS_Store
+

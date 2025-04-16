@@ -144,11 +144,16 @@ body {
   display: grid;
   grid-template-columns: 3fr 1fr;
   gap: 2rem;
+  margin-bottom: 2rem;
 }
 
 @media (max-width: 1023px) {
   .main-content {
     grid-template-columns: 1fr;
+  }
+  
+  .side-content {
+    flex-direction: column-reverse;
   }
 }
 
@@ -269,6 +274,12 @@ body {
   color: var(--text-secondary);
   margin-top: 0.25rem;
   margin-left: 2rem;
+}
+
+.side-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 .chat-box {
@@ -644,4 +655,110 @@ body {
 .user-message .markdown-content a {
   color: white;
   text-decoration: underline;
+}
+.token-usage-container {
+  background-color: var(--card-background);
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: var(--shadow);
+  border-top: 4px solid #333333;
+  position: relative;
+  overflow: hidden;
+}
+
+.token-usage-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: #333333;
+  z-index: 1;
+}
+
+.token-usage-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--heading-color);
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #333333;
+  padding-bottom: 0.75rem;
+}
+
+.token-progress-container {
+  margin-bottom: 1rem;
+}
+
+.token-progress-bar {
+  height: 10px;
+  background-color: #2a2a2a;
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.token-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #444444 0%, #555555 100%);
+  border-radius: 5px;
+  transition: width 0.3s ease;
+}
+
+.token-progress-fill.warning {
+  background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+}
+
+.token-progress-fill.critical {
+  background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+}
+
+.token-progress-text {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.token-progress-percentage {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.token-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.token-info-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.token-info-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.token-info-value {
+  font-size: 0.9375rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* Token limit exceeded message */
+.token-limit-message {
+  background-color: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 0.5rem 1rem;
+  color: #f87171;
+  font-size: 0.9375rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
