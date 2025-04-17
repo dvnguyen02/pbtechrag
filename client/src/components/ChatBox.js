@@ -23,7 +23,6 @@ const ChatBox = ({
     <div className="chat-container">
       <div className="header">
         <div className="logo">
-          <h1>PBTech RAG</h1>
         </div>
       </div>
       

@@ -20,14 +20,11 @@ function App() {
   const chatBoxRef = useRef(null);
   
   const exampleQueries = [
-    "Can I run Black Myth Wukong on this laptop",
     "Show me laptops for graphic design",
+    "Can I run Black Myth Wukong on this laptop",
     "Compare MacBook Pro and Dell XPS 15",
-    "What's the difference between ASUS ROG and Alienware gaming laptops?",
     "What are the specifications of the Dell XPS 13?",
     "What laptops can I buy for over $500 and under $1500?", 
-    "What's the most expensive laptop you have?",
-    "Check game compatibility for this laptop with Black Myth Wukong"
   ];
 
   useEffect(() => {

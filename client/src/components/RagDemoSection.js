@@ -34,7 +34,7 @@ const RagDemoSection = () => {
 
   return (
     <div className="demo-section">
-      <h3>See The Knowledge Behind Our Answers</h3>
+      <h3>See The Knowledge Behind the RAG</h3>
       
       <div className="demo-container scroll-reveal" ref={demoRef}>
         <div className="demo-question">
@@ -43,7 +43,7 @@ const RagDemoSection = () => {
         
         <div className="demo-columns">
           <div className="demo-col">
-            <h4>What Our AI Searches:</h4>
+            <h4>What RAG sees:</h4>
             <div className="data-sample">
               <DatasetPreview limitRows={3} showHeader={true} />
             </div>
@@ -61,6 +61,12 @@ const RagDemoSection = () => {
             </div>
           </div>
         </div>
+      </div>
+      
+      {/* New call-to-action section */}
+      <div className="try-it-cta">
+        <h4>Feel Interested? Give it a try now!</h4>
+        <p>Ask your own questions about our products in the chatbox below.</p>
       </div>
     </div>
   );

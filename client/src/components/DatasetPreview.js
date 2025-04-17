@@ -5,28 +5,20 @@ const DatasetPreview = ({ limitRows = null, showHeader = true }) => {
   const allRows = [
     {
       productName: "Lenovo 300e G4 11.6\" HD Touch Chromebook",
-      category: "Chromebook",
-      generalSpecs: "MediaTek MT8183, 4GB RAM, 32GB eMMC",
+      category: "computers/laptops",
+      generalSpecs: "MediaTek MT8186 - 8GB RAM - 64GB eMMC - ChromeOS",
       detailedSpecs: "11.6\" HD Touchscreen, Chrome OS, 16hr battery life",
-      price: "$349.99",
-      productUrl: "https://www.pbtech.co.nz/product/..."
+      price: "$691.00",
+      productUrl: "https://www.pbtech.co.nz/product/NBKLEN823003/Lenovo-300e-G4-116-HD-Touch-Chromebook-MediaTek-MT"
     },
     {
-      productName: "ASUS Vivobook Go E1504FA",
-      category: "Ultrabook",
-      generalSpecs: "AMD Ryzen 5 7520U, 16GB RAM, 512GB SSD",
-      detailedSpecs: "15.6\" FHD Display, Windows 11, 10hr battery life",
-      price: "$899.00",
+      productName: "Lenovo 500e Yoga G4 12.2\" WUXGA Touch Chromebook",
+      category: "computers/laptops",
+      generalSpecs: "Intel Celeron N100 - 4GB RAM - 32GB eMMC - Chrome OS",
+      detailedSpecs: "12.2\" FHD Display, Windows 11, 10hr battery life",
+      price: "$714.00",
       productUrl: "https://www.pbtech.co.nz/product/NBKASU1504274/..."
     },
-    {
-      productName: "MSI Katana 15 B13VFK",
-      category: "Gaming Laptop",
-      generalSpecs: "Intel i7-13620H, 16GB RAM, 1TB SSD",
-      detailedSpecs: "15.6\" FHD 144Hz, RTX 4060 8GB, Windows 11",
-      price: "$1,899.00",
-      productUrl: "https://www.pbtech.co.nz/product/..."
-    }
   ];
 
   const displayRows = limitRows ? allRows.slice(0, limitRows) : allRows;

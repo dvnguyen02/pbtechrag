@@ -27,16 +27,19 @@ def serve(path):
     elif path != "" and os.path.exists(app.template_folder + '/' + path):
         return send_from_directory(app.template_folder, path)
     else:
-        # If 'thread_id' not in session, create it
-        if 'thread_id' not in session:
-            session['thread_id'] = str(uuid.uuid4())
+        # Always create a new thread_id on page refresh
+        session['thread_id'] = str(uuid.uuid4())
         return render_template('index.html')
 
 @app.route('/query', methods=['POST'])
 def query():
     """Handle user queries with token limit enforcement"""
     user_input = request.json.get('query', '')
-    thread_id = session.get('thread_id', str(uuid.uuid4()))
+    # First get the thread_id, then check if it exists
+    thread_id = session.get('thread_id')
+    if not thread_id:
+        thread_id = str(uuid.uuid4())
+        session['thread_id'] = thread_id  # Save the new thread_id back to session
     config = {"configurable": {"thread_id": thread_id}}
     
     # Estimate token usage for this request
@@ -88,6 +91,7 @@ def query():
                 responses.append({"type": "tool", "name": tool_name, "content": tool_content})
         
         # Get usage stats to return to client
+        
         usage_stats = token_counter.get_usage_stats(thread_id)
         
         # Return all responses including AI messages and System Messages/Tool Messages
@@ -127,9 +131,9 @@ def reset_conversation():
     
     return jsonify({"success": True, "new_thread_id": new_thread_id})
 
-# if __name__ == '__main__':
-#     app.run(debug=True, host='0.0.0.0', port=5000)
-
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 10000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(debug=True, host='0.0.0.0', port=5000)
+
+# if __name__ == '__main__':
+#     port = int(os.environ.get('PORT', 10000))
+#     app.run(host='0.0.0.0', port=port)

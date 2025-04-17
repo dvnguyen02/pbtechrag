@@ -25,8 +25,8 @@ const RagDescription = () => {
       
       <div className="intro slide-in-animation">
         <p>
-          A production-ready implementation demonstrating advanced vector search capabilities 
-          with a state-of-the-art graph-based RAG architecture for intelligent product discovery.
+          An implementation demonstrating advanced vector search capabilities 
+          with a graph-based RAG architecture.
         </p>
       </div>
       
@@ -54,7 +54,27 @@ const RagDescription = () => {
           vector similarity matching, and state management for conversational memory across complex workflows.
         </p>
       </div>
-      
+      <div className="benefits-section fade-in-animation">
+        <h3 className="tool-section-title">How it works?</h3>
+        
+        <p>
+        When a user asks a question, the system first analyzes the query, then selects appropriate specialized function 
+        calls/tool calls (such as retrieve, compare_products, get_price, etc.) to fetch relevant product information from a 
+        vector database containing PBTech's laptop catalog. The retrieved product data is embedded using advanced embedding 
+        models, allowing for semantic searching beyond simple keyword matching. 
+        The system then augments the AI's knowledge with this retrieved information and generates a comprehensive response.
+        </p>
+
+        <p>
+        What makes this system unique is the transparent display of both the raw tool results and the AI's 
+        interpretation: you'll first see a "tool message" showing exactly what product data was retrieved 
+        (technical specifications, pricing, etc.), followed by an "assistant message" where the LLM synthesizes 
+        this information into a more helpful response. This approach ensures you receive up-to-date, factual 
+        information about PBTech products rather than potentially outdated or hallucinated information that 
+        might come from the AI's general training.
+
+        </p>
+      </div>
       <div className={`example-container ${skillsVisible ? 'skills-visible' : ''}`}>
         <h4>Example Queries:</h4>
         <ul className="example-list">
