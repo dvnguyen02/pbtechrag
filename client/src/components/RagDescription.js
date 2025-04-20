@@ -21,13 +21,9 @@ const RagDescription = () => {
 
   return (
     <div className={`rag-description ${isVisible ? 'visible' : ''}`}>
-      <h2 className="title-animation">Data Science-Powered RAG Implementation</h2>
+      <h2 className="title-animation">Our RAG Implementation</h2>
       
       <div className="intro slide-in-animation">
-        <p>
-          An implementation demonstrating advanced vector search capabilities 
-          with a graph-based RAG architecture.
-        </p>
       </div>
       
       <div className="features">
@@ -44,38 +40,17 @@ const RagDescription = () => {
           <p>Creates natural, helpful responses that sound human and conversational</p>
         </div>
       </div>
-      
-      <div className="benefits-section fade-in-animation">
-        <h3 className="tool-section-title">Technical Implementation</h3>
-        
-        <p>
-          This project demonstrates advanced LLM application engineering: 
-          graph-based RAG architecture, specialized tool functions for targeted information retrieval,
-          vector similarity matching, and state management for conversational memory across complex workflows.
-        </p>
-      </div>
       <div className="benefits-section fade-in-animation">
         <h3 className="tool-section-title">How it works?</h3>
         
         <p>
-        When a user asks a question, the system first analyzes the query, then selects appropriate specialized function 
+        When a user asks a question, RAG first analyzes the query, then selects appropriate specialized function 
         calls/tool calls (such as retrieve, compare_products, get_price, etc.) to fetch relevant product information from a 
-        vector database containing PBTech's laptop catalog. The retrieved product data is embedded using advanced embedding 
-        models, allowing for semantic searching beyond simple keyword matching. 
-        The system then augments the AI's knowledge with this retrieved information and generates a comprehensive response.
+        vector database containing PBTech's laptop catalog. The retrieved product data is embedded using openai embedding 
+        models, allowing for semantic searching. 
+        RAG then augments the AI's knowledge with this retrieved information and generates a comprehensive response.
         </p>
-
-        <p>
-        What makes this system unique is the transparent display of both the raw tool results and the AI's 
-        interpretation: you'll first see a "tool message" showing exactly what product data was retrieved 
-        (technical specifications, pricing, etc.), followed by an "assistant message" where the LLM synthesizes 
-        this information into a more helpful response. This approach ensures you receive up-to-date, factual 
-        information about PBTech products rather than potentially outdated or hallucinated information that 
-        might come from the AI's general training.
-
-        </p>
-      </div>
-      <div className={`example-container ${skillsVisible ? 'skills-visible' : ''}`}>
+        <div className={`example-container ${skillsVisible ? 'skills-visible' : ''}`}>
         <h4>Example Queries:</h4>
         <ul className="example-list">
         <li><strong>Compare product A and B</strong> - Get detailed comparisons instantly</li>
@@ -84,6 +59,7 @@ const RagDescription = () => {
         <li><strong>Show premium products</strong> - Find high-end alternatives quickly</li>
         <li><strong>What's been updated recently?</strong> - Stay informed on latest changes</li>
         </ul>
+      </div>
       </div>
     </div>
   );

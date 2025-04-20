@@ -64,9 +64,36 @@ const RagDemoSection = () => {
       </div>
       
       {/* New call-to-action section */}
+      <div className="rag-explanation">
+        <p>
+          What makes RAG unique is the transparent display of both the raw tool results and the AI's 
+          interpretation. 
+        </p>
+        <p>
+        You'll first see a tool message showing what product data was retrieved,
+          followed by the RAG messages where the LLM synthesizes this information into a more helpful response. 
+          <p>
+          This approach ensures you receive factual information about PBTech products rather than potentially 
+          outdated or hallucinated information that might come from the AI's general training.
+          </p>
+          
+        </p>
+      </div>
+
       <div className="try-it-cta">
-        <h4>Feel Interested? Give it a try now!</h4>
+        <h4>Ready to Try It Yourself?</h4>
         <p>Ask your own questions about our products in the chatbox below.</p>
+        <div className="dataset-link-container">
+          <p>
+            Not sure about the AI's knowledge? Check out <a 
+              href='https://docs.google.com/spreadsheets/d/1SDhHi2_sJkzhY9_LESBFzNB94bT9n0kaIGnEKC7741Y/edit?usp=sharing'
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              the complete dataset
+            </a> that produces the responses.
+          </p>
+        </div>
       </div>
     </div>
   );
